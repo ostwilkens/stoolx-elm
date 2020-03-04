@@ -1,4 +1,4 @@
-module Node exposing (Node, decoder, encode, inputCount, setCode, outputCount)
+module Node exposing (Node, decoder, encode, inputCount, outputCount, setCode)
 
 import Json.Decode as Decode exposing (Decoder, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)

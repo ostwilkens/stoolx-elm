@@ -13972,9 +13972,9 @@ var $elm_explorations$webgl$WebGL$entity = $elm_explorations$webgl$WebGL$entityW
 	_List_fromArray(
 		[$elm_explorations$webgl$WebGL$Settings$DepthTest$default]));
 var $author$project$Main$fragmentShader = {
-	src: '\n        precision mediump float;\n        varying vec3 vcolor;\n\n        void main () {\n            gl_FragColor = vec4(vec3(1.0, 0.0, 0.0), 1.0);\n        }\n    ',
+	src: '\n        precision mediump float;\n        varying vec2 vFragCoord;\n        uniform float time;\n\n        void main () {\n            vec2 uv = vFragCoord;\n            gl_FragColor = vec4(vec3(1.0, 0.0 + sin(time * 0.1), 0.0 + uv.x) * 0.1, 0.0);\n        }\n    ',
 	attributes: {},
-	uniforms: {}
+	uniforms: {time: 'time'}
 };
 var $elm$html$Html$Attributes$height = function (n) {
 	return A2(
@@ -13983,10 +13983,9 @@ var $elm$html$Html$Attributes$height = function (n) {
 		$elm$core$String$fromInt(n));
 };
 var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
-var $author$project$Main$Vertex = F2(
-	function (position, color) {
-		return {color: color, position: position};
-	});
+var $author$project$Main$Vertex = function (position) {
+	return {position: position};
+};
 var $elm_explorations$webgl$WebGL$Mesh3 = F2(
 	function (a, b) {
 		return {$: 'Mesh3', a: a, b: b};
@@ -13998,51 +13997,20 @@ var $author$project$Main$mesh = $elm_explorations$webgl$WebGL$triangles(
 	_List_fromArray(
 		[
 			_Utils_Tuple3(
-			A2(
-				$author$project$Main$Vertex,
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 1),
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 0, 0)),
-			A2(
-				$author$project$Main$Vertex,
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, -1),
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 0, 1, 0)),
-			A2(
-				$author$project$Main$Vertex,
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, -1, -1),
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 0, 0, 1))),
+			$author$project$Main$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, 1, 0)),
+			$author$project$Main$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 0)),
+			$author$project$Main$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, -1, 0))),
 			_Utils_Tuple3(
-			A2(
-				$author$project$Main$Vertex,
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, -1, -1),
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 0, 0, 1)),
-			A2(
-				$author$project$Main$Vertex,
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, -1, 1),
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 0, 0, 0)),
-			A2(
-				$author$project$Main$Vertex,
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 1),
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 0, 0)))
+			$author$project$Main$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, -1, 0)),
+			$author$project$Main$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 0)),
+			$author$project$Main$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, -1, 0)))
 		]));
-var $elm$core$Basics$cos = _Basics_cos;
-var $elm_explorations$linear_algebra$Math$Matrix4$makeLookAt = _MJS_m4x4makeLookAt;
-var $elm_explorations$linear_algebra$Math$Matrix4$makePerspective = _MJS_m4x4makePerspective;
-var $elm_explorations$linear_algebra$Math$Matrix4$mul = _MJS_m4x4mul;
-var $elm$core$Basics$sin = _Basics_sin;
-var $author$project$Main$perspective = function (t) {
-	return A2(
-		$elm_explorations$linear_algebra$Math$Matrix4$mul,
-		A4($elm_explorations$linear_algebra$Math$Matrix4$makePerspective, 45, 1, 0.01, 100),
-		A3(
-			$elm_explorations$linear_algebra$Math$Matrix4$makeLookAt,
-			A3(
-				$elm_explorations$linear_algebra$Math$Vector3$vec3,
-				4 * $elm$core$Basics$cos(t),
-				0,
-				4 * $elm$core$Basics$sin(t)),
-			A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 0, 0, 0),
-			A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 0, 1, 0)));
-};
 var $elm_explorations$webgl$WebGL$Internal$Alpha = function (a) {
 	return {$: 'Alpha', a: a};
 };
@@ -14065,9 +14033,9 @@ var $elm_explorations$webgl$WebGL$toHtml = $elm_explorations$webgl$WebGL$toHtmlW
 			$elm_explorations$webgl$WebGL$depth(1)
 		]));
 var $author$project$Main$vertexShader = {
-	src: '\n        attribute vec3 position;\n        attribute vec3 color;\n        uniform mat4 perspective;\n        uniform float time;\n        varying vec3 vcolor;\n\n        void main () {\n            gl_Position = perspective * vec4(position, 1.0);\n            // gl_Position.x = 2.0;\n            // gl_Position.y = sin(time) * 1000.0;\n            // vcolor = color + sin(time);\n            // gl_Position = vec4( position, 1.0 );\n        }\n    ',
-	attributes: {color: 'color', position: 'position'},
-	uniforms: {perspective: 'perspective', time: 'time'}
+	src: '\n        precision mediump float;\n        attribute vec3 position;\n        varying vec2 vFragCoord;\n\n        void main () {\n            gl_Position = vec4(position, 1.0);\n            vFragCoord = position.xy;\n        }\n    ',
+	attributes: {position: 'position'},
+	uniforms: {}
 };
 var $elm$html$Html$Attributes$width = function (n) {
 	return A2(
@@ -14082,7 +14050,8 @@ var $author$project$Main$glView = function (time) {
 			_List_fromArray(
 				[
 					$elm$html$Html$Attributes$width(400),
-					$elm$html$Html$Attributes$height(800)
+					$elm$html$Html$Attributes$height(800),
+					A2($elm$html$Html$Attributes$style, 'display', 'block')
 				]),
 			_List_fromArray(
 				[
@@ -14091,10 +14060,7 @@ var $author$project$Main$glView = function (time) {
 					$author$project$Main$vertexShader,
 					$author$project$Main$fragmentShader,
 					$author$project$Main$mesh,
-					{
-						perspective: $author$project$Main$perspective(1000),
-						time: time / 1000
-					})
+					{time: time / 1000})
 				])));
 };
 var $mdgriffith$elm_ui$Internal$Model$OnlyDynamic = F2(
