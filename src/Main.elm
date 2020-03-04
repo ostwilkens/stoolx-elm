@@ -18,7 +18,7 @@ import Html.Attributes
 import Html.Events.Extra.Mouse as Mouse
 import Json.Decode as Decode
 import Json.Encode as Encode
-import List exposing (any, filter, head, map, repeat)
+import List exposing (any, filter, head, map, maximum, range, repeat)
 import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, setCode)
 import Ports exposing (storeNodes)
 import Shader exposing (fragmentShader, mesh, vertexShader)
@@ -34,6 +34,8 @@ type alias Model =
     , time : Float
     , connecting : Bool
     , size : ( Float, Float )
+    , connectingSocketRef : Maybe SocketRef
+    , connections : List Connection
     }
 
 
@@ -54,6 +56,8 @@ init flags =
       , time = 0
       , connecting = False
       , size = ( 0, 0 )
+      , connectingSocketRef = Nothing
+      , connections = []
       }
     , Task.perform InitSize Browser.Dom.getViewport
     )
@@ -87,9 +91,15 @@ type Msg
     | Save
     | SetCode String
     | UpdateTime Float
-    | StartConnect
+    | StartConnect SocketRef
     | Resize ( Float, Float )
     | InitSize Browser.Dom.Viewport
+    | EndConnect SocketRef
+
+
+nextId : Model -> Int
+nextId model =
+    Maybe.withDefault 0 (maximum (map (\n -> n.id) model.nodes)) + 1
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -126,7 +136,11 @@ update msg model =
                 )
 
         Add ->
-            ( { model | nodes = Node.init :: map deselect model.nodes }
+            let
+                id =
+                    nextId model
+            in
+            ( { model | nodes = Node.init id :: map deselect model.nodes }
             , Cmd.none
             )
 
@@ -150,8 +164,8 @@ update msg model =
             , Cmd.none
             )
 
-        StartConnect ->
-            ( { model | connecting = True }
+        StartConnect socketRef ->
+            ( { model | connecting = True, connectingSocketRef = Just socketRef }
             , Cmd.none
             )
 
@@ -164,6 +178,52 @@ update msg model =
             ( { model | size = ( viewport.viewport.width, viewport.viewport.height ) }
             , Cmd.none
             )
+
+        EndConnect socketRef ->
+            case model.connectingSocketRef of
+                Just justConnectingSocketRef ->
+                    let
+                        connection =
+                            connectSockets justConnectingSocketRef socketRef
+                    in
+                    case connection of
+                        Just justConnection ->
+                            ( { model | connections = justConnection :: model.connections }
+                            , Cmd.none
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+
+connectSockets : SocketRef -> SocketRef -> Maybe Connection
+connectSockets a b =
+    let
+        input =
+            if a.socketType == Input then
+                a
+
+            else
+                b
+
+        output =
+            if a.socketType == Output then
+                a
+
+            else
+                b
+
+        valid =
+            input.socketType == Input && output.socketType == Output
+    in
+    if valid then
+        Just { input = input, output = output }
+
+    else
+        Nothing
 
 
 saveNodes : List Node -> Cmd msg
@@ -407,31 +467,35 @@ nodeEl node =
             , Events.onMouseDown (Select node)
             , Font.size 10
             ]
-            [ putsEl (outputCount node) alignTop
+            [ putsEl node.id Output (outputCount node)
             , codePreviewEl node
-            , putsEl (inputCount node) alignBottom
+            , putsEl node.id Input (inputCount node)
             ]
         )
 
 
+putsEl : Int -> SocketType -> Int -> Element Msg
+putsEl id socketType count =
+    let
+        alignment =
+            if socketType == Output then
+                alignTop
 
--- rita upp linje med canvas overlay
--- från node.pos till node.pos med offset beroende på typ/antal
-
-
-putsEl : Int -> Attribute Msg -> Element Msg
-putsEl n alignment =
+            else
+                alignBottom
+    in
     row [ alignment, spacing 10, centerX ]
-        (repeat n putEl)
+        (map (\i -> putEl { id = id, index = i, socketType = socketType }) (range 0 (count - 1)))
 
 
-putEl : Element Msg
-putEl =
+putEl : SocketRef -> Element Msg
+putEl socketRef =
     el
         [ width (px 20)
         , height (px 20)
         , Background.color (rgb 0.9 0.3 0.3)
-        , Events.onMouseDown StartConnect
+        , Events.onMouseDown (StartConnect socketRef)
+        , Events.onMouseUp (EndConnect socketRef)
         ]
         Element.none
 
@@ -461,23 +525,87 @@ canvasEl model =
         (Canvas.toHtml ( floor width, floor height )
             [ Html.Attributes.style "pointer-events" "none"
             ]
-            [ Canvas.shapes [ Canvas.Settings.fill (Color.rgba 0 0 0 0) ]
-                [ Canvas.rect ( 0, 0 ) width height ]
-            , Canvas.clear ( 0, 0 ) width height
-            , connectingLine model
-
-            -- , line ( 10, 10 ) ( 100, 100 )
-            ]
+            ([ Canvas.clear ( 0, 0 ) width height
+             , connectingLine model
+             ]
+                ++ connectedLines model
+            )
         )
+
+
+socketIndexOffsetX : Int -> Int -> Float
+socketIndexOffsetX index count =
+    toFloat (50 + 15 + index * 30 - count * 15)
+
+
+socketTypeOffsetY : SocketType -> Float
+socketTypeOffsetY socketType =
+    case socketType of
+        Output ->
+            13
+
+        Input ->
+            87
+
+
+socketRefPos : Model -> SocketRef -> ( Float, Float )
+socketRefPos model socketRef =
+    let
+        node =
+            head (filter (\n -> n.id == socketRef.id) model.nodes)
+    in
+    case node of
+        Just justNode ->
+            let
+                count =
+                    case socketRef.socketType of
+                        Output ->
+                            outputCount justNode
+
+                        Input ->
+                            inputCount justNode
+
+                offsetX =
+                    socketIndexOffsetX socketRef.index count
+
+                offsetY =
+                    socketTypeOffsetY socketRef.socketType
+            in
+            ( justNode.pos.x + offsetX, justNode.pos.y + offsetY )
+
+        Nothing ->
+            ( 0, 0 )
 
 
 connectingLine : Model -> Canvas.Renderable
 connectingLine model =
     if model.connecting then
-        line ( 0, 0 ) ( model.lastCursorPos.x, model.lastCursorPos.y )
+        let
+            a =
+                case model.connectingSocketRef of
+                    Just socketRef ->
+                        socketRefPos model socketRef
+
+                    Nothing ->
+                        ( 100, 0 )
+
+            b =
+                ( model.lastCursorPos.x, model.lastCursorPos.y )
+        in
+        line a b
 
     else
         line ( 0, 0 ) ( 0, 0 )
+
+
+connectedLine : Model -> Connection -> Canvas.Renderable
+connectedLine model connection =
+    line (socketRefPos model connection.input) (socketRefPos model connection.output)
+
+
+connectedLines : Model -> List Canvas.Renderable
+connectedLines model =
+    map (connectedLine model) model.connections
 
 
 line : ( Float, Float ) -> ( Float, Float ) -> Canvas.Renderable
@@ -490,3 +618,21 @@ line ( ax, ay ) ( bx, by ) =
             [ Canvas.lineTo ( bx, by )
             ]
         ]
+
+
+type SocketType
+    = Input
+    | Output
+
+
+type alias SocketRef =
+    { id : Int
+    , index : Int
+    , socketType : SocketType
+    }
+
+
+type alias Connection =
+    { input : SocketRef
+    , output : SocketRef
+    }

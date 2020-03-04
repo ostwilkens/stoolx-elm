@@ -1,6 +1,6 @@
-module Node exposing (Node, decoder, encode, init, inputCount, outputCount, setCode, previewCode)
+module Node exposing (Node, decoder, encode, init, inputCount, outputCount, previewCode, setCode)
 
-import Json.Decode as Decode exposing (Decoder, string)
+import Json.Decode as Decode exposing (Decoder, int, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)
 import Json.Encode as Encode
 import List exposing (head)
@@ -12,6 +12,7 @@ type alias Node =
     { pos : Vec2
     , selected : Bool
     , code : String
+    , id : Int
     }
 
 
@@ -20,6 +21,7 @@ encode node =
     Encode.object
         [ ( "pos", Vec2.encode node.pos )
         , ( "code", Encode.string node.code )
+        , ( "id", Encode.int node.id )
         ]
 
 
@@ -29,6 +31,7 @@ decoder =
         |> required "pos" Vec2.decoder
         |> hardcoded False
         |> required "code" string
+        |> required "id" int
 
 
 setCode : String -> Node -> Node
@@ -69,9 +72,13 @@ inputCount node =
     List.length (split "__" node.code) - 1
 
 
-init : Node
-init =
-    { pos = Vec2 200 300, selected = True, code = "x" }
+init : Int -> Node
+init id =
+    { pos = Vec2 200 300
+    , selected = True
+    , code = "x"
+    , id = id
+    }
 
 
 previewCode : Node -> String

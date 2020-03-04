@@ -6845,9 +6845,9 @@ var $author$project$Vec2$Vec2 = F2(
 		return {x: x, y: y};
 	});
 var $elm$json$Json$Decode$decodeValue = _Json_run;
-var $author$project$Node$Node = F3(
-	function (pos, selected, code) {
-		return {code: code, pos: pos, selected: selected};
+var $author$project$Node$Node = F4(
+	function (pos, selected, code, id) {
+		return {code: code, id: id, pos: pos, selected: selected};
 	});
 var $elm$json$Json$Decode$float = _Json_decodeFloat;
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
@@ -6874,19 +6874,24 @@ var $elm$core$Basics$composeR = F3(
 			f(x));
 	});
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded = A2($elm$core$Basics$composeR, $elm$json$Json$Decode$succeed, $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom);
+var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Node$decoder = A3(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-	'code',
-	$elm$json$Json$Decode$string,
-	A2(
-		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded,
-		false,
-		A3(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'pos',
-			$author$project$Vec2$decoder,
-			$elm$json$Json$Decode$succeed($author$project$Node$Node))));
+	'id',
+	$elm$json$Json$Decode$int,
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'code',
+		$elm$json$Json$Decode$string,
+		A2(
+			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$hardcoded,
+			false,
+			A3(
+				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+				'pos',
+				$author$project$Vec2$decoder,
+				$elm$json$Json$Decode$succeed($author$project$Node$Node)))));
 var $elm$json$Json$Decode$list = _Json_decodeList;
 var $author$project$Main$decodeStoredNodes = function (nodesJson) {
 	var _v0 = A2(
@@ -6913,6 +6918,8 @@ var $author$project$Main$init = function (flags) {
 	return _Utils_Tuple2(
 		{
 			connecting: false,
+			connectingSocketRef: $elm$core$Maybe$Nothing,
+			connections: _List_Nil,
 			dragging: false,
 			lastCursorPos: A2($author$project$Vec2$Vec2, 0, 0),
 			nodes: nodes,
@@ -7065,7 +7072,6 @@ var $elm$browser$Browser$AnimationManager$onAnimationFrameDelta = function (tagg
 };
 var $elm$browser$Browser$Events$onAnimationFrameDelta = $elm$browser$Browser$AnimationManager$onAnimationFrameDelta;
 var $elm$browser$Browser$Events$Window = {$: 'Window'};
-var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $elm$browser$Browser$Events$MySub = F3(
 	function (a, b, c) {
 		return {$: 'MySub', a: a, b: b, c: c};
@@ -7490,6 +7496,16 @@ var $author$project$Main$subscriptions = function (_v0) {
 					}))
 			]));
 };
+var $author$project$Main$Input = {$: 'Input'};
+var $author$project$Main$Output = {$: 'Output'};
+var $author$project$Main$connectSockets = F2(
+	function (a, b) {
+		var output = _Utils_eq(a.socketType, $author$project$Main$Output) ? a : b;
+		var input = _Utils_eq(a.socketType, $author$project$Main$Input) ? a : b;
+		var valid = _Utils_eq(input.socketType, $author$project$Main$Input) && _Utils_eq(output.socketType, $author$project$Main$Output);
+		return valid ? $elm$core$Maybe$Just(
+			{input: input, output: output}) : $elm$core$Maybe$Nothing;
+	});
 var $author$project$Main$deselect = function (node) {
 	return _Utils_update(
 		node,
@@ -7518,10 +7534,44 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $author$project$Node$init = {
-	code: 'x',
-	pos: A2($author$project$Vec2$Vec2, 200, 300),
-	selected: true
+var $author$project$Node$init = function (id) {
+	return {
+		code: 'x',
+		id: id,
+		pos: A2($author$project$Vec2$Vec2, 200, 300),
+		selected: true
+	};
+};
+var $elm$core$List$maximum = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(
+			A3($elm$core$List$foldl, $elm$core$Basics$max, x, xs));
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $author$project$Main$nextId = function (model) {
+	return A2(
+		$elm$core$Maybe$withDefault,
+		0,
+		$elm$core$List$maximum(
+			A2(
+				$elm$core$List$map,
+				function (n) {
+					return n.id;
+				},
+				model.nodes))) + 1;
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
@@ -7552,6 +7602,7 @@ var $author$project$Vec2$encode = function (vec2) {
 				$elm$json$Json$Encode$float(vec2.y))
 			]));
 };
+var $elm$json$Json$Encode$int = _Json_wrap;
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $author$project$Node$encode = function (node) {
 	return $elm$json$Json$Encode$object(
@@ -7562,7 +7613,10 @@ var $author$project$Node$encode = function (node) {
 				$author$project$Vec2$encode(node.pos)),
 				_Utils_Tuple2(
 				'code',
-				$elm$json$Json$Encode$string(node.code))
+				$elm$json$Json$Encode$string(node.code)),
+				_Utils_Tuple2(
+				'id',
+				$elm$json$Json$Encode$int(node.id))
 			]));
 };
 var $elm$json$Json$Encode$list = F2(
@@ -7647,13 +7701,14 @@ var $author$project$Main$update = F2(
 						{lastCursorPos: pos}),
 					$elm$core$Platform$Cmd$none);
 			case 'Add':
+				var id = $author$project$Main$nextId(model);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
 							nodes: A2(
 								$elm$core$List$cons,
-								$author$project$Node$init,
+								$author$project$Node$init(id),
 								A2($elm$core$List$map, $author$project$Main$deselect, model.nodes))
 						}),
 					$elm$core$Platform$Cmd$none);
@@ -7694,10 +7749,14 @@ var $author$project$Main$update = F2(
 						{time: model.time + delta}),
 					$elm$core$Platform$Cmd$none);
 			case 'StartConnect':
+				var socketRef = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{connecting: true}),
+						{
+							connecting: true,
+							connectingSocketRef: $elm$core$Maybe$Just(socketRef)
+						}),
 					$elm$core$Platform$Cmd$none);
 			case 'Resize':
 				var _v1 = msg.a;
@@ -7710,7 +7769,7 @@ var $author$project$Main$update = F2(
 							size: _Utils_Tuple2(w, h)
 						}),
 					$elm$core$Platform$Cmd$none);
-			default:
+			case 'InitSize':
 				var viewport = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -7719,6 +7778,27 @@ var $author$project$Main$update = F2(
 							size: _Utils_Tuple2(viewport.viewport.width, viewport.viewport.height)
 						}),
 					$elm$core$Platform$Cmd$none);
+			default:
+				var socketRef = msg.a;
+				var _v2 = model.connectingSocketRef;
+				if (_v2.$ === 'Just') {
+					var justConnectingSocketRef = _v2.a;
+					var connection = A2($author$project$Main$connectSockets, justConnectingSocketRef, socketRef);
+					if (connection.$ === 'Just') {
+						var justConnection = connection.a;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									connections: A2($elm$core$List$cons, justConnection, model.connections)
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+					}
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var $elm$json$Json$Decode$value = _Json_decodeValue;
@@ -7970,18 +8050,110 @@ var $author$project$Main$line = F2(
 						]))
 				]));
 	});
-var $author$project$Main$connectingLine = function (model) {
-	return model.connecting ? A2(
-		$author$project$Main$line,
-		_Utils_Tuple2(0, 0),
-		_Utils_Tuple2(model.lastCursorPos.x, model.lastCursorPos.y)) : A2(
-		$author$project$Main$line,
-		_Utils_Tuple2(0, 0),
-		_Utils_Tuple2(0, 0));
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
 };
-var $joakin$elm_canvas$Canvas$Settings$fill = function (color) {
-	return $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp(
-		$joakin$elm_canvas$Canvas$Internal$Canvas$Fill(color));
+var $author$project$Node$inputCount = function (node) {
+	return $elm$core$List$length(
+		A2($elm$core$String$split, '__', node.code)) - 1;
+};
+var $author$project$Node$returnType = function (node) {
+	return $elm$core$List$head(
+		A2($elm$core$String$split, '(', node.code));
+};
+var $author$project$Node$outputCount = function (node) {
+	var _v0 = A2(
+		$elm$core$Maybe$withDefault,
+		'',
+		$author$project$Node$returnType(node));
+	switch (_v0) {
+		case 'float':
+			return 1;
+		case 'vec2':
+			return 2;
+		case 'vec3':
+			return 3;
+		case 'vec4':
+			return 4;
+		default:
+			return 0;
+	}
+};
+var $author$project$Main$socketIndexOffsetX = F2(
+	function (index, count) {
+		return ((50 + 15) + (index * 30)) - (count * 15);
+	});
+var $author$project$Main$socketTypeOffsetY = function (socketType) {
+	if (socketType.$ === 'Output') {
+		return 13;
+	} else {
+		return 87;
+	}
+};
+var $author$project$Main$socketRefPos = F2(
+	function (model, socketRef) {
+		var node = $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (n) {
+					return _Utils_eq(n.id, socketRef.id);
+				},
+				model.nodes));
+		if (node.$ === 'Just') {
+			var justNode = node.a;
+			var offsetY = $author$project$Main$socketTypeOffsetY(socketRef.socketType);
+			var count = function () {
+				var _v1 = socketRef.socketType;
+				if (_v1.$ === 'Output') {
+					return $author$project$Node$outputCount(justNode);
+				} else {
+					return $author$project$Node$inputCount(justNode);
+				}
+			}();
+			var offsetX = A2($author$project$Main$socketIndexOffsetX, socketRef.index, count);
+			return _Utils_Tuple2(justNode.pos.x + offsetX, justNode.pos.y + offsetY);
+		} else {
+			return _Utils_Tuple2(0, 0);
+		}
+	});
+var $author$project$Main$connectedLine = F2(
+	function (model, connection) {
+		return A2(
+			$author$project$Main$line,
+			A2($author$project$Main$socketRefPos, model, connection.input),
+			A2($author$project$Main$socketRefPos, model, connection.output));
+	});
+var $author$project$Main$connectedLines = function (model) {
+	return A2(
+		$elm$core$List$map,
+		$author$project$Main$connectedLine(model),
+		model.connections);
+};
+var $author$project$Main$connectingLine = function (model) {
+	if (model.connecting) {
+		var b = _Utils_Tuple2(model.lastCursorPos.x, model.lastCursorPos.y);
+		var a = function () {
+			var _v0 = model.connectingSocketRef;
+			if (_v0.$ === 'Just') {
+				var socketRef = _v0.a;
+				return A2($author$project$Main$socketRefPos, model, socketRef);
+			} else {
+				return _Utils_Tuple2(100, 0);
+			}
+		}();
+		return A2($author$project$Main$line, a, b);
+	} else {
+		return A2(
+			$author$project$Main$line,
+			_Utils_Tuple2(0, 0),
+			_Utils_Tuple2(0, 0));
+	}
 };
 var $mdgriffith$elm_ui$Internal$Model$Unstyled = function (a) {
 	return {$: 'Unstyled', a: a};
@@ -7992,14 +8164,6 @@ var $elm$core$Basics$always = F2(
 	});
 var $mdgriffith$elm_ui$Internal$Model$unstyled = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Unstyled, $elm$core$Basics$always);
 var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
-var $joakin$elm_canvas$Canvas$Internal$Canvas$Rect = F3(
-	function (a, b, c) {
-		return {$: 'Rect', a: a, b: b, c: c};
-	});
-var $joakin$elm_canvas$Canvas$rect = F3(
-	function (pos, width, height) {
-		return A3($joakin$elm_canvas$Canvas$Internal$Canvas$Rect, pos, width, height);
-	});
 var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
 	return y;
@@ -8739,30 +8903,17 @@ var $author$project$Main$canvasEl = function (model) {
 				[
 					A2($elm$html$Html$Attributes$style, 'pointer-events', 'none')
 				]),
-			_List_fromArray(
-				[
-					A2(
-					$joakin$elm_canvas$Canvas$shapes,
-					_List_fromArray(
-						[
-							$joakin$elm_canvas$Canvas$Settings$fill(
-							A4($avh4$elm_color$Color$rgba, 0, 0, 0, 0))
-						]),
-					_List_fromArray(
-						[
-							A3(
-							$joakin$elm_canvas$Canvas$rect,
-							_Utils_Tuple2(0, 0),
-							width,
-							height)
-						])),
-					A3(
-					$joakin$elm_canvas$Canvas$clear,
-					_Utils_Tuple2(0, 0),
-					width,
-					height),
-					$author$project$Main$connectingLine(model)
-				])));
+			_Utils_ap(
+				_List_fromArray(
+					[
+						A3(
+						$joakin$elm_canvas$Canvas$clear,
+						_Utils_Tuple2(0, 0),
+						width,
+						height),
+						$author$project$Main$connectingLine(model)
+					]),
+				$author$project$Main$connectedLines(model))));
 };
 var $author$project$Main$clientPos = function (event) {
 	var _v0 = event.clientPos;
@@ -8918,15 +9069,6 @@ var $mdgriffith$elm_ui$Internal$Model$Fill = function (a) {
 	return {$: 'Fill', a: a};
 };
 var $mdgriffith$elm_ui$Element$fill = $mdgriffith$elm_ui$Internal$Model$Fill(1);
-var $elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(x);
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $author$project$Main$getSelectedCode = function (nodes) {
 	var selectedNodes = A2(
 		$elm$core$List$filter,
@@ -9142,15 +9284,6 @@ var $mdgriffith$elm_ui$Internal$Model$transformClass = function (transform) {
 				'tfrm-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(tx) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(ty) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(tz) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(sx) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(sy) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(sz) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(ox) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(oy) + ('-' + ($mdgriffith$elm_ui$Internal$Model$floatClass(oz) + ('-' + $mdgriffith$elm_ui$Internal$Model$floatClass(angle))))))))))))))))))));
 	}
 };
-var $elm$core$Maybe$withDefault = F2(
-	function (_default, maybe) {
-		if (maybe.$ === 'Just') {
-			var value = maybe.a;
-			return value;
-		} else {
-			return _default;
-		}
-	});
 var $mdgriffith$elm_ui$Internal$Model$getStyleName = function (style) {
 	switch (style.$) {
 		case 'Shadows':
@@ -12207,16 +12340,6 @@ var $mdgriffith$elm_ui$Internal$Model$adjust = F3(
 	function (size, height, vertical) {
 		return {height: height / size, size: size, vertical: vertical};
 	});
-var $elm$core$List$maximum = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(
-			A3($elm$core$List$foldl, $elm$core$Basics$max, x, xs));
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $elm$core$List$minimum = function (list) {
 	if (list.b) {
 		var x = list.a;
@@ -15667,8 +15790,6 @@ var $author$project$Main$menuEl = A2(
 var $author$project$Main$Select = function (a) {
 	return {$: 'Select', a: a};
 };
-var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
-var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
 var $mdgriffith$elm_ui$Internal$Model$CenterY = {$: 'CenterY'};
 var $mdgriffith$elm_ui$Element$centerY = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$CenterY);
 var $elm$core$String$replace = F3(
@@ -15759,10 +15880,6 @@ var $mdgriffith$elm_ui$Element$column = F2(
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
-var $author$project$Node$inputCount = function (node) {
-	return $elm$core$List$length(
-		A2($elm$core$String$split, '__', node.code)) - 1;
-};
 var $mdgriffith$elm_ui$Element$moveDown = function (y) {
 	return A2(
 		$mdgriffith$elm_ui$Internal$Model$TransformComponent,
@@ -15792,65 +15909,42 @@ var $elm$html$Html$Events$onMouseDown = function (msg) {
 		$elm$json$Json$Decode$succeed(msg));
 };
 var $mdgriffith$elm_ui$Element$Events$onMouseDown = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseDown);
-var $author$project$Node$returnType = function (node) {
-	return $elm$core$List$head(
-		A2($elm$core$String$split, '(', node.code));
+var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
+var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
+var $author$project$Main$EndConnect = function (a) {
+	return {$: 'EndConnect', a: a};
 };
-var $author$project$Node$outputCount = function (node) {
-	var _v0 = A2(
-		$elm$core$Maybe$withDefault,
-		'',
-		$author$project$Node$returnType(node));
-	switch (_v0) {
-		case 'float':
-			return 1;
-		case 'vec2':
-			return 2;
-		case 'vec3':
-			return 3;
-		case 'vec4':
-			return 4;
-		default:
-			return 0;
-	}
+var $author$project$Main$StartConnect = function (a) {
+	return {$: 'StartConnect', a: a};
 };
-var $author$project$Main$StartConnect = {$: 'StartConnect'};
-var $author$project$Main$putEl = A2(
-	$mdgriffith$elm_ui$Element$el,
-	_List_fromArray(
-		[
-			$mdgriffith$elm_ui$Element$width(
-			$mdgriffith$elm_ui$Element$px(20)),
-			$mdgriffith$elm_ui$Element$height(
-			$mdgriffith$elm_ui$Element$px(20)),
-			$mdgriffith$elm_ui$Element$Background$color(
-			A3($mdgriffith$elm_ui$Element$rgb, 0.9, 0.3, 0.3)),
-			$mdgriffith$elm_ui$Element$Events$onMouseDown($author$project$Main$StartConnect)
-		]),
-	$mdgriffith$elm_ui$Element$none);
-var $elm$core$List$repeatHelp = F3(
-	function (result, n, value) {
-		repeatHelp:
-		while (true) {
-			if (n <= 0) {
-				return result;
-			} else {
-				var $temp$result = A2($elm$core$List$cons, value, result),
-					$temp$n = n - 1,
-					$temp$value = value;
-				result = $temp$result;
-				n = $temp$n;
-				value = $temp$value;
-				continue repeatHelp;
-			}
-		}
-	});
-var $elm$core$List$repeat = F2(
-	function (n, value) {
-		return A3($elm$core$List$repeatHelp, _List_Nil, n, value);
-	});
-var $author$project$Main$putsEl = F2(
-	function (n, alignment) {
+var $elm$html$Html$Events$onMouseUp = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'mouseup',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $mdgriffith$elm_ui$Element$Events$onMouseUp = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseUp);
+var $author$project$Main$putEl = function (socketRef) {
+	return A2(
+		$mdgriffith$elm_ui$Element$el,
+		_List_fromArray(
+			[
+				$mdgriffith$elm_ui$Element$width(
+				$mdgriffith$elm_ui$Element$px(20)),
+				$mdgriffith$elm_ui$Element$height(
+				$mdgriffith$elm_ui$Element$px(20)),
+				$mdgriffith$elm_ui$Element$Background$color(
+				A3($mdgriffith$elm_ui$Element$rgb, 0.9, 0.3, 0.3)),
+				$mdgriffith$elm_ui$Element$Events$onMouseDown(
+				$author$project$Main$StartConnect(socketRef)),
+				$mdgriffith$elm_ui$Element$Events$onMouseUp(
+				$author$project$Main$EndConnect(socketRef))
+			]),
+		$mdgriffith$elm_ui$Element$none);
+};
+var $author$project$Main$putsEl = F3(
+	function (id, socketType, count) {
+		var alignment = _Utils_eq(socketType, $author$project$Main$Output) ? $mdgriffith$elm_ui$Element$alignTop : $mdgriffith$elm_ui$Element$alignBottom;
 		return A2(
 			$mdgriffith$elm_ui$Element$row,
 			_List_fromArray(
@@ -15859,7 +15953,13 @@ var $author$project$Main$putsEl = F2(
 					$mdgriffith$elm_ui$Element$spacing(10),
 					$mdgriffith$elm_ui$Element$centerX
 				]),
-			A2($elm$core$List$repeat, n, $author$project$Main$putEl));
+			A2(
+				$elm$core$List$map,
+				function (i) {
+					return $author$project$Main$putEl(
+						{id: id, index: i, socketType: socketType});
+				},
+				A2($elm$core$List$range, 0, count - 1)));
 	});
 var $author$project$Main$nodeEl = function (node) {
 	return A2(
@@ -15887,15 +15987,17 @@ var $author$project$Main$nodeEl = function (node) {
 				]),
 			_List_fromArray(
 				[
-					A2(
+					A3(
 					$author$project$Main$putsEl,
-					$author$project$Node$outputCount(node),
-					$mdgriffith$elm_ui$Element$alignTop),
+					node.id,
+					$author$project$Main$Output,
+					$author$project$Node$outputCount(node)),
 					$author$project$Main$codePreviewEl(node),
-					A2(
+					A3(
 					$author$project$Main$putsEl,
-					$author$project$Node$inputCount(node),
-					$mdgriffith$elm_ui$Element$alignBottom)
+					node.id,
+					$author$project$Main$Input,
+					$author$project$Node$inputCount(node))
 				])));
 };
 var $elm$html$Html$Events$onDoubleClick = function (msg) {
@@ -15905,13 +16007,6 @@ var $elm$html$Html$Events$onDoubleClick = function (msg) {
 		$elm$json$Json$Decode$succeed(msg));
 };
 var $mdgriffith$elm_ui$Element$Events$onDoubleClick = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onDoubleClick);
-var $elm$html$Html$Events$onMouseUp = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'mouseup',
-		$elm$json$Json$Decode$succeed(msg));
-};
-var $mdgriffith$elm_ui$Element$Events$onMouseUp = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseUp);
 var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions = {preventDefault: true, stopPropagation: false};
 var $elm$virtual_dom$VirtualDom$Custom = function (a) {
 	return {$: 'Custom', a: a};
