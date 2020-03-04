@@ -338,7 +338,7 @@ view model =
                  , inFront (codeInput model.nodes)
                  ]
                     ++ map inFront (map nodeEl model.nodes)
-                    ++ [ inFront (canvasEl model.size) ]
+                    ++ [ inFront (canvasEl model) ]
                 )
                 menuEl
             , Element.none
@@ -448,8 +448,15 @@ shaderEl time =
         )
 
 
-canvasEl : ( Float, Float ) -> Element Msg
-canvasEl ( width, height ) =
+canvasEl : Model -> Element Msg
+canvasEl model =
+    let
+        width =
+            Tuple.first model.size
+
+        height =
+            Tuple.second model.size
+    in
     Element.html
         (Canvas.toHtml ( floor width, floor height )
             [ Html.Attributes.style "pointer-events" "none"
@@ -457,13 +464,24 @@ canvasEl ( width, height ) =
             [ Canvas.shapes [ Canvas.Settings.fill (Color.rgba 0 0 0 0) ]
                 [ Canvas.rect ( 0, 0 ) width height ]
             , Canvas.clear ( 0, 0 ) width height
-            , renderLine ( 10, 10 ) ( 100, 100 )
+            , connectingLine model
+
+            -- , line ( 10, 10 ) ( 100, 100 )
             ]
         )
 
 
-renderLine : ( Float, Float ) -> ( Float, Float ) -> Canvas.Renderable
-renderLine ( ax, ay ) ( bx, by ) =
+connectingLine : Model -> Canvas.Renderable
+connectingLine model =
+    if model.connecting then
+        line ( 0, 0 ) ( model.lastCursorPos.x, model.lastCursorPos.y )
+
+    else
+        line ( 0, 0 ) ( 0, 0 )
+
+
+line : ( Float, Float ) -> ( Float, Float ) -> Canvas.Renderable
+line ( ax, ay ) ( bx, by ) =
     Canvas.shapes
         [ Canvas.Settings.stroke (Color.rgba 0 1 0 0.7)
         , Canvas.Settings.Line.lineWidth 5

@@ -7761,33 +7761,6 @@ var $joakin$elm_canvas$Canvas$clear = F3(
 				drawable: A3($joakin$elm_canvas$Canvas$Internal$Canvas$DrawableClear, point, w, h)
 			});
 	});
-var $joakin$elm_canvas$Canvas$Internal$Canvas$Fill = function (a) {
-	return {$: 'Fill', a: a};
-};
-var $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp = function (a) {
-	return {$: 'SettingDrawOp', a: a};
-};
-var $joakin$elm_canvas$Canvas$Settings$fill = function (color) {
-	return $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp(
-		$joakin$elm_canvas$Canvas$Internal$Canvas$Fill(color));
-};
-var $mdgriffith$elm_ui$Internal$Model$Unstyled = function (a) {
-	return {$: 'Unstyled', a: a};
-};
-var $elm$core$Basics$always = F2(
-	function (a, _v0) {
-		return a;
-	});
-var $mdgriffith$elm_ui$Internal$Model$unstyled = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Unstyled, $elm$core$Basics$always);
-var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
-var $joakin$elm_canvas$Canvas$Internal$Canvas$Rect = F3(
-	function (a, b, c) {
-		return {$: 'Rect', a: a, b: b, c: c};
-	});
-var $joakin$elm_canvas$Canvas$rect = F3(
-	function (pos, width, height) {
-		return A3($joakin$elm_canvas$Canvas$Internal$Canvas$Rect, pos, width, height);
-	});
 var $joakin$elm_canvas$Canvas$Internal$Canvas$LineTo = function (a) {
 	return {$: 'LineTo', a: a};
 };
@@ -7839,6 +7812,9 @@ var $avh4$elm_color$Color$rgba = F4(
 	});
 var $joakin$elm_canvas$Canvas$Internal$Canvas$DrawableShapes = function (a) {
 	return {$: 'DrawableShapes', a: a};
+};
+var $joakin$elm_canvas$Canvas$Internal$Canvas$Fill = function (a) {
+	return {$: 'Fill', a: a};
 };
 var $joakin$elm_canvas$Canvas$Internal$Canvas$FillAndStroke = F2(
 	function (a, b) {
@@ -7961,11 +7937,14 @@ var $joakin$elm_canvas$Canvas$shapes = F2(
 					drawable: $joakin$elm_canvas$Canvas$Internal$Canvas$DrawableShapes(ss)
 				}));
 	});
+var $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp = function (a) {
+	return {$: 'SettingDrawOp', a: a};
+};
 var $joakin$elm_canvas$Canvas$Settings$stroke = function (color) {
 	return $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp(
 		$joakin$elm_canvas$Canvas$Internal$Canvas$Stroke(color));
 };
-var $author$project$Main$renderLine = F2(
+var $author$project$Main$line = F2(
 	function (_v0, _v1) {
 		var ax = _v0.a;
 		var ay = _v0.b;
@@ -7991,6 +7970,40 @@ var $author$project$Main$renderLine = F2(
 						]))
 				]));
 	});
+var $author$project$Main$connectingLine = function (model) {
+	return model.connecting ? A2(
+		$author$project$Main$line,
+		_Utils_Tuple2(0, 0),
+		_Utils_Tuple2(model.lastCursorPos.x, model.lastCursorPos.y)) : A2(
+		$author$project$Main$line,
+		_Utils_Tuple2(0, 0),
+		_Utils_Tuple2(0, 0));
+};
+var $joakin$elm_canvas$Canvas$Settings$fill = function (color) {
+	return $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp(
+		$joakin$elm_canvas$Canvas$Internal$Canvas$Fill(color));
+};
+var $mdgriffith$elm_ui$Internal$Model$Unstyled = function (a) {
+	return {$: 'Unstyled', a: a};
+};
+var $elm$core$Basics$always = F2(
+	function (a, _v0) {
+		return a;
+	});
+var $mdgriffith$elm_ui$Internal$Model$unstyled = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Unstyled, $elm$core$Basics$always);
+var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
+var $joakin$elm_canvas$Canvas$Internal$Canvas$Rect = F3(
+	function (a, b, c) {
+		return {$: 'Rect', a: a, b: b, c: c};
+	});
+var $joakin$elm_canvas$Canvas$rect = F3(
+	function (pos, width, height) {
+		return A3($joakin$elm_canvas$Canvas$Internal$Canvas$Rect, pos, width, height);
+	});
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $elm$html$Html$canvas = _VirtualDom_node('canvas');
@@ -8713,9 +8726,9 @@ var $joakin$elm_canvas$Canvas$toHtml = F3(
 			attrs,
 			entities);
 	});
-var $author$project$Main$canvasEl = function (_v0) {
-	var width = _v0.a;
-	var height = _v0.b;
+var $author$project$Main$canvasEl = function (model) {
+	var width = model.size.a;
+	var height = model.size.b;
 	return $mdgriffith$elm_ui$Element$html(
 		A3(
 			$joakin$elm_canvas$Canvas$toHtml,
@@ -8748,10 +8761,7 @@ var $author$project$Main$canvasEl = function (_v0) {
 					_Utils_Tuple2(0, 0),
 					width,
 					height),
-					A2(
-					$author$project$Main$renderLine,
-					_Utils_Tuple2(10, 10),
-					_Utils_Tuple2(100, 100))
+					$author$project$Main$connectingLine(model)
 				])));
 };
 var $author$project$Main$clientPos = function (event) {
@@ -9102,10 +9112,6 @@ var $mdgriffith$elm_ui$Internal$Model$lengthClassName = function (x) {
 			var len = x.b;
 			return 'max' + ($elm$core$String$fromInt(max) + $mdgriffith$elm_ui$Internal$Model$lengthClassName(len));
 	}
-};
-var $elm$core$Tuple$second = function (_v0) {
-	var y = _v0.b;
-	return y;
 };
 var $mdgriffith$elm_ui$Internal$Model$transformClass = function (transform) {
 	switch (transform.$) {
@@ -16205,7 +16211,7 @@ var $author$project$Main$view = function (model) {
 							_List_fromArray(
 								[
 									$mdgriffith$elm_ui$Element$inFront(
-									$author$project$Main$canvasEl(model.size))
+									$author$project$Main$canvasEl(model))
 								]))),
 					$author$project$Main$menuEl),
 					$mdgriffith$elm_ui$Element$none
