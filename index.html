@@ -19,12 +19,10 @@
     , flags: startingState
   });
 
-  app.ports.storeNodes.subscribe(function(nodes) {
-    if (nodes.length > 0) {
-      var nodesJson = JSON.stringify(nodes);
-      localStorage.setItem('stoolx-save', nodesJson);
-      console.log("Saved state: ", nodesJson);
-    }
+  app.ports.storeModel.subscribe(function(model) {
+      var modelJson = JSON.stringify(model);
+      localStorage.setItem('stoolx-save', modelJson);
+      console.log("Saved state: ", modelJson);
   });
   </script>
 </body>

@@ -7,7 +7,8 @@ import Canvas
 import Canvas.Settings
 import Canvas.Settings.Line
 import Color
-import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, paddingXY, px, rgb, row, spacing, text, width)
+import Connection exposing (Connection, SocketRef, SocketType(..), decoder)
+import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, paddingXY, px, rgb, rgba, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -16,11 +17,12 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events.Extra.Mouse as Mouse
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode as Encode
 import List exposing (any, filter, head, map, maximum, range, repeat)
 import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, setCode)
-import Ports exposing (storeNodes)
+import Ports exposing (storeModel)
 import Shader exposing (fragmentShader, mesh, vertexShader)
 import Task
 import Vec2 exposing (Vec2, encode)
@@ -39,25 +41,31 @@ type alias Model =
     }
 
 
+type alias PartialModel =
+    { nodes : List Node
+    , connections : List Connection
+    }
+
+
 init : Maybe Encode.Value -> ( Model, Cmd Msg )
 init flags =
     let
-        nodes =
+        partialModel =
             case flags of
-                Just nodesJson ->
-                    decodeStoredNodes nodesJson
+                Just modelJson ->
+                    decodeStoredModel modelJson
 
                 Nothing ->
-                    []
+                    { nodes = [], connections = []}
     in
-    ( { nodes = nodes
+    ( { nodes = partialModel.nodes
       , dragging = False
       , lastCursorPos = Vec2 0 0
       , time = 0
       , connecting = False
       , size = ( 0, 0 )
       , connectingSocketRef = Nothing
-      , connections = []
+      , connections = partialModel.connections
       }
     , Task.perform InitSize Browser.Dom.getViewport
     )
@@ -151,7 +159,7 @@ update msg model =
 
         Save ->
             ( model
-            , saveNodes model.nodes
+            , saveModel model
             )
 
         SetCode code ->
@@ -226,10 +234,39 @@ connectSockets a b =
         Nothing
 
 
-saveNodes : List Node -> Cmd msg
-saveNodes nodes =
-    Encode.list Node.encode nodes
-        |> Ports.storeNodes
+saveModel : Model -> Cmd msg
+saveModel model =
+    encodeModel model
+        |> Ports.storeModel
+
+
+encodeModel : Model -> Encode.Value
+encodeModel model =
+    Encode.object
+        [ ( "nodes", Encode.list Node.encode model.nodes )
+        , ( "connections", Encode.list Connection.encode model.connections )
+        ]
+
+
+modelDecoder : Decoder PartialModel
+modelDecoder =
+    Decode.succeed PartialModel
+        |> required "nodes" (Decode.list Node.decoder)
+        |> required "connections" (Decode.list Connection.decoder)
+
+
+
+-- Encode.list Node.encode nodes
+
+
+decodeStoredModel : Encode.Value -> PartialModel
+decodeStoredModel modelJson =
+    case Decode.decodeValue modelDecoder modelJson of
+        Ok partialModel ->
+            partialModel
+
+        Err _ ->
+            { nodes = [], connections = [] }
 
 
 decodeStoredNodes : Encode.Value -> List Node
@@ -361,13 +398,13 @@ narrowFont =
     ]
 
 
-codeInput : List Node -> Element Msg
-codeInput nodes =
+codeEl : List Node -> Element Msg
+codeEl nodes =
     if any (\n -> n.selected) nodes then
         Input.multiline
-            [ height fill
-            , width (px 300)
-            , Background.color gray
+            [ width fill
+            , height (px 100)
+            , Background.color (rgba 0.3 0.3 0.3 0.5)
             , Font.color white
             , Font.size 14
             , Font.family codeFont
@@ -395,7 +432,7 @@ view model =
                  , Events.onMouseUp Release
                  , Events.onDoubleClick Deselect
                  , Element.behindContent (shaderEl model.time)
-                 , inFront (codeInput model.nodes)
+                 , inFront (codeEl model.nodes)
                  ]
                     ++ map inFront (map nodeEl model.nodes)
                     ++ [ inFront (canvasEl model) ]
@@ -618,21 +655,3 @@ line ( ax, ay ) ( bx, by ) =
             [ Canvas.lineTo ( bx, by )
             ]
         ]
-
-
-type SocketType
-    = Input
-    | Output
-
-
-type alias SocketRef =
-    { id : Int
-    , index : Int
-    , socketType : SocketType
-    }
-
-
-type alias Connection =
-    { input : SocketRef
-    , output : SocketRef
-    }

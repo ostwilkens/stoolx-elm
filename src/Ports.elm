@@ -1,6 +1,6 @@
-port module Ports exposing (storeNodes)
+port module Ports exposing (storeModel)
 
 import Json.Encode as Encode
 
 
-port storeNodes : Encode.Value -> Cmd msg
+port storeModel : Encode.Value -> Cmd msg
