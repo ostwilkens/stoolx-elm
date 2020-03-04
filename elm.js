@@ -6919,8 +6919,8 @@ var $author$project$Main$init = function (flags) {
 };
 var $elm$json$Json$Decode$null = _Json_decodeNull;
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
-var $author$project$Main$TimeDelta = function (a) {
-	return {$: 'TimeDelta', a: a};
+var $author$project$Main$UpdateTime = function (a) {
+	return {$: 'UpdateTime', a: a};
 };
 var $elm$browser$Browser$AnimationManager$Delta = function (a) {
 	return {$: 'Delta', a: a};
@@ -7057,7 +7057,7 @@ var $elm$browser$Browser$AnimationManager$onAnimationFrameDelta = function (tagg
 };
 var $elm$browser$Browser$Events$onAnimationFrameDelta = $elm$browser$Browser$AnimationManager$onAnimationFrameDelta;
 var $author$project$Main$subscriptions = function (_v0) {
-	return $elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$TimeDelta);
+	return $elm$browser$Browser$Events$onAnimationFrameDelta($author$project$Main$UpdateTime);
 };
 var $author$project$Main$deselect = function (node) {
 	return _Utils_update(
@@ -7087,7 +7087,7 @@ var $elm$core$List$filter = F2(
 			_List_Nil,
 			list);
 	});
-var $author$project$Main$new = {
+var $author$project$Node$init = {
 	code: 'x',
 	pos: A2($author$project$Vec2$Vec2, 200, 300),
 	selected: true
@@ -7219,7 +7219,7 @@ var $author$project$Main$update = F2(
 						{
 							nodes: A2(
 								$elm$core$List$cons,
-								$author$project$Main$new,
+								$author$project$Node$init,
 								A2($elm$core$List$map, $author$project$Main$deselect, model.nodes))
 						}),
 					$elm$core$Platform$Cmd$none);
@@ -7293,6 +7293,11 @@ var $author$project$Main$clientPos = function (event) {
 var $author$project$Main$SetCode = function (a) {
 	return {$: 'SetCode', a: a};
 };
+var $mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
+	return {$: 'AlignX', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$Right = {$: 'Right'};
+var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Right);
 var $elm$core$List$any = F2(
 	function (isOkay, list) {
 		any:
@@ -7314,6 +7319,17 @@ var $elm$core$List$any = F2(
 			}
 		}
 	});
+var $mdgriffith$elm_ui$Internal$Model$SansSerif = {$: 'SansSerif'};
+var $mdgriffith$elm_ui$Element$Font$sansSerif = $mdgriffith$elm_ui$Internal$Model$SansSerif;
+var $mdgriffith$elm_ui$Internal$Model$Typeface = function (a) {
+	return {$: 'Typeface', a: a};
+};
+var $mdgriffith$elm_ui$Element$Font$typeface = $mdgriffith$elm_ui$Internal$Model$Typeface;
+var $author$project$Main$codeFont = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$Font$typeface('Courier New'),
+		$mdgriffith$elm_ui$Element$Font$sansSerif
+	]);
 var $mdgriffith$elm_ui$Internal$Model$Colored = F3(
 	function (a, b, c) {
 		return {$: 'Colored', a: a, b: b, c: c};
@@ -7365,6 +7381,59 @@ var $mdgriffith$elm_ui$Element$Font$color = function (fontColor) {
 			'fc-' + $mdgriffith$elm_ui$Internal$Model$formatColorClass(fontColor),
 			'color',
 			fontColor));
+};
+var $mdgriffith$elm_ui$Internal$Model$FontFamily = F2(
+	function (a, b) {
+		return {$: 'FontFamily', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Internal$Flag$fontFamily = $mdgriffith$elm_ui$Internal$Flag$flag(5);
+var $elm$core$String$toLower = _String_toLower;
+var $elm$core$String$words = _String_words;
+var $mdgriffith$elm_ui$Internal$Model$renderFontClassName = F2(
+	function (font, current) {
+		return _Utils_ap(
+			current,
+			function () {
+				switch (font.$) {
+					case 'Serif':
+						return 'serif';
+					case 'SansSerif':
+						return 'sans-serif';
+					case 'Monospace':
+						return 'monospace';
+					case 'Typeface':
+						var name = font.a;
+						return A2(
+							$elm$core$String$join,
+							'-',
+							$elm$core$String$words(
+								$elm$core$String$toLower(name)));
+					case 'ImportFont':
+						var name = font.a;
+						var url = font.b;
+						return A2(
+							$elm$core$String$join,
+							'-',
+							$elm$core$String$words(
+								$elm$core$String$toLower(name)));
+					default:
+						var name = font.a.name;
+						return A2(
+							$elm$core$String$join,
+							'-',
+							$elm$core$String$words(
+								$elm$core$String$toLower(name)));
+				}
+			}());
+	});
+var $mdgriffith$elm_ui$Element$Font$family = function (families) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$fontFamily,
+		A2(
+			$mdgriffith$elm_ui$Internal$Model$FontFamily,
+			A3($elm$core$List$foldl, $mdgriffith$elm_ui$Internal$Model$renderFontClassName, 'ff-', families),
+			families));
 };
 var $mdgriffith$elm_ui$Internal$Model$Fill = function (a) {
 	return {$: 'Fill', a: a};
@@ -13866,6 +13935,16 @@ var $mdgriffith$elm_ui$Internal$Model$Px = function (a) {
 	return {$: 'Px', a: a};
 };
 var $mdgriffith$elm_ui$Element$px = $mdgriffith$elm_ui$Internal$Model$Px;
+var $mdgriffith$elm_ui$Internal$Model$FontSize = function (a) {
+	return {$: 'FontSize', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Flag$fontSize = $mdgriffith$elm_ui$Internal$Flag$flag(4);
+var $mdgriffith$elm_ui$Element$Font$size = function (i) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$StyleClass,
+		$mdgriffith$elm_ui$Internal$Flag$fontSize,
+		$mdgriffith$elm_ui$Internal$Model$FontSize(i));
+};
 var $author$project$Main$white = A3($mdgriffith$elm_ui$Element$rgb, 1, 1, 1);
 var $author$project$Main$codeInput = function (nodes) {
 	return A2(
@@ -13881,7 +13960,10 @@ var $author$project$Main$codeInput = function (nodes) {
 				$mdgriffith$elm_ui$Element$width(
 				$mdgriffith$elm_ui$Element$px(300)),
 				$mdgriffith$elm_ui$Element$Background$color($author$project$Main$gray),
-				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$white)
+				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$white),
+				$mdgriffith$elm_ui$Element$Font$size(14),
+				$mdgriffith$elm_ui$Element$Font$family($author$project$Main$codeFont),
+				$mdgriffith$elm_ui$Element$alignRight
 			]),
 		{
 			label: $mdgriffith$elm_ui$Element$Input$labelHidden('code'),
@@ -13892,177 +13974,6 @@ var $author$project$Main$codeInput = function (nodes) {
 		}) : $mdgriffith$elm_ui$Element$none;
 };
 var $author$project$Main$darkGray = A3($mdgriffith$elm_ui$Element$rgb, 0.15, 0.15, 0.15);
-var $elm_explorations$webgl$WebGL$Internal$DepthTest = F4(
-	function (a, b, c, d) {
-		return {$: 'DepthTest', a: a, b: b, c: c, d: d};
-	});
-var $elm_explorations$webgl$WebGL$Settings$DepthTest$less = function (_v0) {
-	var write = _v0.write;
-	var near = _v0.near;
-	var far = _v0.far;
-	return A4($elm_explorations$webgl$WebGL$Internal$DepthTest, 513, write, near, far);
-};
-var $elm_explorations$webgl$WebGL$Settings$DepthTest$default = $elm_explorations$webgl$WebGL$Settings$DepthTest$less(
-	{far: 1, near: 0, write: true});
-var $elm_explorations$webgl$WebGL$Internal$disableSetting = F2(
-	function (cache, setting) {
-		switch (setting.$) {
-			case 'Blend':
-				return _WebGL_disableBlend(cache);
-			case 'DepthTest':
-				return _WebGL_disableDepthTest(cache);
-			case 'StencilTest':
-				return _WebGL_disableStencilTest(cache);
-			case 'Scissor':
-				return _WebGL_disableScissor(cache);
-			case 'ColorMask':
-				return _WebGL_disableColorMask(cache);
-			case 'CullFace':
-				return _WebGL_disableCullFace(cache);
-			case 'PolygonOffset':
-				return _WebGL_disablePolygonOffset(cache);
-			case 'SampleCoverage':
-				return _WebGL_disableSampleCoverage(cache);
-			default:
-				return _WebGL_disableSampleAlphaToCoverage(cache);
-		}
-	});
-var $elm_explorations$webgl$WebGL$Internal$enableOption = F2(
-	function (ctx, option) {
-		switch (option.$) {
-			case 'Alpha':
-				return A2(_WebGL_enableAlpha, ctx, option);
-			case 'Depth':
-				return A2(_WebGL_enableDepth, ctx, option);
-			case 'Stencil':
-				return A2(_WebGL_enableStencil, ctx, option);
-			case 'Antialias':
-				return A2(_WebGL_enableAntialias, ctx, option);
-			case 'ClearColor':
-				return A2(_WebGL_enableClearColor, ctx, option);
-			default:
-				return A2(_WebGL_enablePreserveDrawingBuffer, ctx, option);
-		}
-	});
-var $elm_explorations$webgl$WebGL$Internal$enableSetting = F2(
-	function (gl, setting) {
-		switch (setting.$) {
-			case 'Blend':
-				return A2(_WebGL_enableBlend, gl, setting);
-			case 'DepthTest':
-				return A2(_WebGL_enableDepthTest, gl, setting);
-			case 'StencilTest':
-				return A2(_WebGL_enableStencilTest, gl, setting);
-			case 'Scissor':
-				return A2(_WebGL_enableScissor, gl, setting);
-			case 'ColorMask':
-				return A2(_WebGL_enableColorMask, gl, setting);
-			case 'CullFace':
-				return A2(_WebGL_enableCullFace, gl, setting);
-			case 'PolygonOffset':
-				return A2(_WebGL_enablePolygonOffset, gl, setting);
-			case 'SampleCoverage':
-				return A2(_WebGL_enableSampleCoverage, gl, setting);
-			default:
-				return A2(_WebGL_enableSampleAlphaToCoverage, gl, setting);
-		}
-	});
-var $elm_explorations$webgl$WebGL$entityWith = _WebGL_entity;
-var $elm_explorations$webgl$WebGL$entity = $elm_explorations$webgl$WebGL$entityWith(
-	_List_fromArray(
-		[$elm_explorations$webgl$WebGL$Settings$DepthTest$default]));
-var $author$project$Main$fragmentShader = {
-	src: '\n        precision mediump float;\n        varying vec2 vFragCoord;\n        uniform float time;\n\n        void main () {\n            vec2 uv = vFragCoord;\n            gl_FragColor = vec4(vec3(1.0, 0.0 + sin(time * 0.1), 0.0 + uv.x) * 0.1, 0.0);\n        }\n    ',
-	attributes: {},
-	uniforms: {time: 'time'}
-};
-var $elm$html$Html$Attributes$height = function (n) {
-	return A2(
-		_VirtualDom_attribute,
-		'height',
-		$elm$core$String$fromInt(n));
-};
-var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
-var $author$project$Main$Vertex = function (position) {
-	return {position: position};
-};
-var $elm_explorations$webgl$WebGL$Mesh3 = F2(
-	function (a, b) {
-		return {$: 'Mesh3', a: a, b: b};
-	});
-var $elm_explorations$webgl$WebGL$triangles = $elm_explorations$webgl$WebGL$Mesh3(
-	{elemSize: 3, indexSize: 0, mode: 4});
-var $elm_explorations$linear_algebra$Math$Vector3$vec3 = _MJS_v3;
-var $author$project$Main$mesh = $elm_explorations$webgl$WebGL$triangles(
-	_List_fromArray(
-		[
-			_Utils_Tuple3(
-			$author$project$Main$Vertex(
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, 1, 0)),
-			$author$project$Main$Vertex(
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 0)),
-			$author$project$Main$Vertex(
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, -1, 0))),
-			_Utils_Tuple3(
-			$author$project$Main$Vertex(
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, -1, 0)),
-			$author$project$Main$Vertex(
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 0)),
-			$author$project$Main$Vertex(
-				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, -1, 0)))
-		]));
-var $elm_explorations$webgl$WebGL$Internal$Alpha = function (a) {
-	return {$: 'Alpha', a: a};
-};
-var $elm_explorations$webgl$WebGL$alpha = $elm_explorations$webgl$WebGL$Internal$Alpha;
-var $elm_explorations$webgl$WebGL$Internal$Antialias = {$: 'Antialias'};
-var $elm_explorations$webgl$WebGL$antialias = $elm_explorations$webgl$WebGL$Internal$Antialias;
-var $elm_explorations$webgl$WebGL$Internal$Depth = function (a) {
-	return {$: 'Depth', a: a};
-};
-var $elm_explorations$webgl$WebGL$depth = $elm_explorations$webgl$WebGL$Internal$Depth;
-var $elm_explorations$webgl$WebGL$toHtmlWith = F3(
-	function (options, attributes, entities) {
-		return A3(_WebGL_toHtml, options, attributes, entities);
-	});
-var $elm_explorations$webgl$WebGL$toHtml = $elm_explorations$webgl$WebGL$toHtmlWith(
-	_List_fromArray(
-		[
-			$elm_explorations$webgl$WebGL$alpha(true),
-			$elm_explorations$webgl$WebGL$antialias,
-			$elm_explorations$webgl$WebGL$depth(1)
-		]));
-var $author$project$Main$vertexShader = {
-	src: '\n        precision mediump float;\n        attribute vec3 position;\n        varying vec2 vFragCoord;\n\n        void main () {\n            gl_Position = vec4(position, 1.0);\n            vFragCoord = position.xy;\n        }\n    ',
-	attributes: {position: 'position'},
-	uniforms: {}
-};
-var $elm$html$Html$Attributes$width = function (n) {
-	return A2(
-		_VirtualDom_attribute,
-		'width',
-		$elm$core$String$fromInt(n));
-};
-var $author$project$Main$glView = function (time) {
-	return $mdgriffith$elm_ui$Element$html(
-		A2(
-			$elm_explorations$webgl$WebGL$toHtml,
-			_List_fromArray(
-				[
-					$elm$html$Html$Attributes$width(400),
-					$elm$html$Html$Attributes$height(800),
-					A2($elm$html$Html$Attributes$style, 'display', 'block')
-				]),
-			_List_fromArray(
-				[
-					A4(
-					$elm_explorations$webgl$WebGL$entity,
-					$author$project$Main$vertexShader,
-					$author$project$Main$fragmentShader,
-					$author$project$Main$mesh,
-					{time: time / 1000})
-				])));
-};
 var $mdgriffith$elm_ui$Internal$Model$OnlyDynamic = F2(
 	function (a, b) {
 		return {$: 'OnlyDynamic', a: a, b: b};
@@ -14206,58 +14117,6 @@ var $mdgriffith$elm_ui$Internal$Model$renderRoot = F3(
 				$mdgriffith$elm_ui$Internal$Model$Unkeyed(
 					_List_fromArray(
 						[child]))));
-	});
-var $mdgriffith$elm_ui$Internal$Model$FontFamily = F2(
-	function (a, b) {
-		return {$: 'FontFamily', a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Internal$Model$FontSize = function (a) {
-	return {$: 'FontSize', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Model$SansSerif = {$: 'SansSerif'};
-var $mdgriffith$elm_ui$Internal$Model$Typeface = function (a) {
-	return {$: 'Typeface', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Flag$fontFamily = $mdgriffith$elm_ui$Internal$Flag$flag(5);
-var $mdgriffith$elm_ui$Internal$Flag$fontSize = $mdgriffith$elm_ui$Internal$Flag$flag(4);
-var $elm$core$String$toLower = _String_toLower;
-var $elm$core$String$words = _String_words;
-var $mdgriffith$elm_ui$Internal$Model$renderFontClassName = F2(
-	function (font, current) {
-		return _Utils_ap(
-			current,
-			function () {
-				switch (font.$) {
-					case 'Serif':
-						return 'serif';
-					case 'SansSerif':
-						return 'sans-serif';
-					case 'Monospace':
-						return 'monospace';
-					case 'Typeface':
-						var name = font.a;
-						return A2(
-							$elm$core$String$join,
-							'-',
-							$elm$core$String$words(
-								$elm$core$String$toLower(name)));
-					case 'ImportFont':
-						var name = font.a;
-						var url = font.b;
-						return A2(
-							$elm$core$String$join,
-							'-',
-							$elm$core$String$words(
-								$elm$core$String$toLower(name)));
-					default:
-						var name = font.a.name;
-						return A2(
-							$elm$core$String$join,
-							'-',
-							$elm$core$String$words(
-								$elm$core$String$toLower(name)));
-				}
-			}());
 	});
 var $mdgriffith$elm_ui$Internal$Model$rootStyle = function () {
 	var families = _List_fromArray(
@@ -14449,7 +14308,7 @@ var $mdgriffith$elm_ui$Element$padding = function (x) {
 			x,
 			x));
 };
-var $author$project$Main$red = A3($mdgriffith$elm_ui$Element$rgb, 0.6, 0.1, 0.1);
+var $author$project$Main$red = A3($mdgriffith$elm_ui$Element$rgb, 0.8, 0.1, 0.1);
 var $author$project$Main$addButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_fromArray(
@@ -14466,6 +14325,8 @@ var $mdgriffith$elm_ui$Internal$Model$AlignY = function (a) {
 };
 var $mdgriffith$elm_ui$Internal$Model$Bottom = {$: 'Bottom'};
 var $mdgriffith$elm_ui$Element$alignBottom = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Bottom);
+var $mdgriffith$elm_ui$Internal$Model$CenterX = {$: 'CenterX'};
+var $mdgriffith$elm_ui$Element$centerX = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$CenterX);
 var $author$project$Main$Remove = {$: 'Remove'};
 var $author$project$Main$removeButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
@@ -14513,6 +14374,7 @@ var $author$project$Main$menuEl = A2(
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$alignBottom,
+			$mdgriffith$elm_ui$Element$centerX,
 			$mdgriffith$elm_ui$Element$spacing(5)
 		]),
 	_List_fromArray(
@@ -14522,19 +14384,13 @@ var $author$project$Main$Select = function (a) {
 };
 var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
 var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
-var $mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
-	return {$: 'AlignX', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Model$CenterX = {$: 'CenterX'};
-var $mdgriffith$elm_ui$Element$centerX = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$CenterX);
 var $mdgriffith$elm_ui$Internal$Model$CenterY = {$: 'CenterY'};
 var $mdgriffith$elm_ui$Element$centerY = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$CenterY);
-var $mdgriffith$elm_ui$Element$Font$size = function (i) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$fontSize,
-		$mdgriffith$elm_ui$Internal$Model$FontSize(i));
-};
+var $author$project$Main$narrowFont = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$Font$typeface('Arial Narrow'),
+		$mdgriffith$elm_ui$Element$Font$sansSerif
+	]);
 var $author$project$Main$codePreviewEl = function (node) {
 	return A2(
 		$mdgriffith$elm_ui$Element$el,
@@ -14543,7 +14399,8 @@ var $author$project$Main$codePreviewEl = function (node) {
 				$mdgriffith$elm_ui$Element$centerX,
 				$mdgriffith$elm_ui$Element$centerY,
 				$mdgriffith$elm_ui$Element$Font$size(12),
-				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$white)
+				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$white),
+				$mdgriffith$elm_ui$Element$Font$family($author$project$Main$narrowFont)
 			]),
 		$mdgriffith$elm_ui$Element$text(node.code));
 };
@@ -14585,8 +14442,8 @@ var $mdgriffith$elm_ui$Element$moveRight = function (x) {
 		$mdgriffith$elm_ui$Internal$Flag$moveX,
 		$mdgriffith$elm_ui$Internal$Model$MoveX(x));
 };
-var $author$project$Main$nodeColor = function (node) {
-	return node.selected ? $author$project$Main$red : $author$project$Main$gray;
+var $author$project$Main$nodeBorderWidth = function (node) {
+	return node.selected ? $mdgriffith$elm_ui$Element$Border$width(3) : $mdgriffith$elm_ui$Element$Border$width(0);
 };
 var $elm$html$Html$Events$onMouseDown = function (msg) {
 	return A2(
@@ -14674,8 +14531,9 @@ var $author$project$Main$nodeEl = function (node) {
 			$mdgriffith$elm_ui$Element$column,
 			_List_fromArray(
 				[
-					$mdgriffith$elm_ui$Element$Background$color(
-					$author$project$Main$nodeColor(node)),
+					$mdgriffith$elm_ui$Element$Background$color($author$project$Main$gray),
+					$mdgriffith$elm_ui$Element$Border$color($author$project$Main$red),
+					$author$project$Main$nodeBorderWidth(node),
 					$mdgriffith$elm_ui$Element$width(
 					$mdgriffith$elm_ui$Element$px(100)),
 					$mdgriffith$elm_ui$Element$height(
@@ -14817,6 +14675,164 @@ var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions = F3(
 				$mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$eventDecoder));
 	});
 var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove = A2($mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions, 'mousemove', $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions);
+var $elm_explorations$webgl$WebGL$Internal$DepthTest = F4(
+	function (a, b, c, d) {
+		return {$: 'DepthTest', a: a, b: b, c: c, d: d};
+	});
+var $elm_explorations$webgl$WebGL$Settings$DepthTest$less = function (_v0) {
+	var write = _v0.write;
+	var near = _v0.near;
+	var far = _v0.far;
+	return A4($elm_explorations$webgl$WebGL$Internal$DepthTest, 513, write, near, far);
+};
+var $elm_explorations$webgl$WebGL$Settings$DepthTest$default = $elm_explorations$webgl$WebGL$Settings$DepthTest$less(
+	{far: 1, near: 0, write: true});
+var $elm_explorations$webgl$WebGL$Internal$disableSetting = F2(
+	function (cache, setting) {
+		switch (setting.$) {
+			case 'Blend':
+				return _WebGL_disableBlend(cache);
+			case 'DepthTest':
+				return _WebGL_disableDepthTest(cache);
+			case 'StencilTest':
+				return _WebGL_disableStencilTest(cache);
+			case 'Scissor':
+				return _WebGL_disableScissor(cache);
+			case 'ColorMask':
+				return _WebGL_disableColorMask(cache);
+			case 'CullFace':
+				return _WebGL_disableCullFace(cache);
+			case 'PolygonOffset':
+				return _WebGL_disablePolygonOffset(cache);
+			case 'SampleCoverage':
+				return _WebGL_disableSampleCoverage(cache);
+			default:
+				return _WebGL_disableSampleAlphaToCoverage(cache);
+		}
+	});
+var $elm_explorations$webgl$WebGL$Internal$enableOption = F2(
+	function (ctx, option) {
+		switch (option.$) {
+			case 'Alpha':
+				return A2(_WebGL_enableAlpha, ctx, option);
+			case 'Depth':
+				return A2(_WebGL_enableDepth, ctx, option);
+			case 'Stencil':
+				return A2(_WebGL_enableStencil, ctx, option);
+			case 'Antialias':
+				return A2(_WebGL_enableAntialias, ctx, option);
+			case 'ClearColor':
+				return A2(_WebGL_enableClearColor, ctx, option);
+			default:
+				return A2(_WebGL_enablePreserveDrawingBuffer, ctx, option);
+		}
+	});
+var $elm_explorations$webgl$WebGL$Internal$enableSetting = F2(
+	function (gl, setting) {
+		switch (setting.$) {
+			case 'Blend':
+				return A2(_WebGL_enableBlend, gl, setting);
+			case 'DepthTest':
+				return A2(_WebGL_enableDepthTest, gl, setting);
+			case 'StencilTest':
+				return A2(_WebGL_enableStencilTest, gl, setting);
+			case 'Scissor':
+				return A2(_WebGL_enableScissor, gl, setting);
+			case 'ColorMask':
+				return A2(_WebGL_enableColorMask, gl, setting);
+			case 'CullFace':
+				return A2(_WebGL_enableCullFace, gl, setting);
+			case 'PolygonOffset':
+				return A2(_WebGL_enablePolygonOffset, gl, setting);
+			case 'SampleCoverage':
+				return A2(_WebGL_enableSampleCoverage, gl, setting);
+			default:
+				return A2(_WebGL_enableSampleAlphaToCoverage, gl, setting);
+		}
+	});
+var $elm_explorations$webgl$WebGL$entityWith = _WebGL_entity;
+var $elm_explorations$webgl$WebGL$entity = $elm_explorations$webgl$WebGL$entityWith(
+	_List_fromArray(
+		[$elm_explorations$webgl$WebGL$Settings$DepthTest$default]));
+var $author$project$Shader$fragmentShader = {
+	src: '\n        precision mediump float;\n        varying vec2 vFragCoord;\n        uniform float time;\n\n        void main () {\n            vec2 uv = vFragCoord;\n            gl_FragColor = vec4(vec3(1.0, 0.0 + sin(time * 0.1), 0.0 + uv.x) * 0.1, 0.0);\n        }\n    ',
+	attributes: {},
+	uniforms: {time: 'time'}
+};
+var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
+var $author$project$Shader$Vertex = function (position) {
+	return {position: position};
+};
+var $elm_explorations$webgl$WebGL$Mesh3 = F2(
+	function (a, b) {
+		return {$: 'Mesh3', a: a, b: b};
+	});
+var $elm_explorations$webgl$WebGL$triangles = $elm_explorations$webgl$WebGL$Mesh3(
+	{elemSize: 3, indexSize: 0, mode: 4});
+var $elm_explorations$linear_algebra$Math$Vector3$vec3 = _MJS_v3;
+var $author$project$Shader$mesh = $elm_explorations$webgl$WebGL$triangles(
+	_List_fromArray(
+		[
+			_Utils_Tuple3(
+			$author$project$Shader$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, 1, 0)),
+			$author$project$Shader$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 0)),
+			$author$project$Shader$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, -1, 0))),
+			_Utils_Tuple3(
+			$author$project$Shader$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, -1, -1, 0)),
+			$author$project$Shader$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, 1, 0)),
+			$author$project$Shader$Vertex(
+				A3($elm_explorations$linear_algebra$Math$Vector3$vec3, 1, -1, 0)))
+		]));
+var $elm_explorations$webgl$WebGL$Internal$Alpha = function (a) {
+	return {$: 'Alpha', a: a};
+};
+var $elm_explorations$webgl$WebGL$alpha = $elm_explorations$webgl$WebGL$Internal$Alpha;
+var $elm_explorations$webgl$WebGL$Internal$Antialias = {$: 'Antialias'};
+var $elm_explorations$webgl$WebGL$antialias = $elm_explorations$webgl$WebGL$Internal$Antialias;
+var $elm_explorations$webgl$WebGL$Internal$Depth = function (a) {
+	return {$: 'Depth', a: a};
+};
+var $elm_explorations$webgl$WebGL$depth = $elm_explorations$webgl$WebGL$Internal$Depth;
+var $elm_explorations$webgl$WebGL$toHtmlWith = F3(
+	function (options, attributes, entities) {
+		return A3(_WebGL_toHtml, options, attributes, entities);
+	});
+var $elm_explorations$webgl$WebGL$toHtml = $elm_explorations$webgl$WebGL$toHtmlWith(
+	_List_fromArray(
+		[
+			$elm_explorations$webgl$WebGL$alpha(true),
+			$elm_explorations$webgl$WebGL$antialias,
+			$elm_explorations$webgl$WebGL$depth(1)
+		]));
+var $author$project$Shader$vertexShader = {
+	src: '\n        precision mediump float;\n        attribute vec3 position;\n        varying vec2 vFragCoord;\n\n        void main () {\n            gl_Position = vec4(position, 1.0);\n            vFragCoord = position.xy;\n        }\n    ',
+	attributes: {position: 'position'},
+	uniforms: {}
+};
+var $author$project$Main$shaderEl = function (time) {
+	return $mdgriffith$elm_ui$Element$html(
+		A2(
+			$elm_explorations$webgl$WebGL$toHtml,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$style, 'height', '100%'),
+					A2($elm$html$Html$Attributes$style, 'width', '100%')
+				]),
+			_List_fromArray(
+				[
+					A4(
+					$elm_explorations$webgl$WebGL$entity,
+					$author$project$Shader$vertexShader,
+					$author$project$Shader$fragmentShader,
+					$author$project$Shader$mesh,
+					{time: time / 1000})
+				])));
+};
 var $author$project$Main$view = function (model) {
 	return A2(
 		$mdgriffith$elm_ui$Element$layout,
@@ -14844,14 +14860,16 @@ var $author$project$Main$view = function (model) {
 								$mdgriffith$elm_ui$Element$Background$color($author$project$Main$darkGray),
 								$mdgriffith$elm_ui$Element$Events$onDoubleClick($author$project$Main$Deselect),
 								$mdgriffith$elm_ui$Element$behindContent(
-								$author$project$Main$glView(model.time))
+								$author$project$Main$shaderEl(model.time)),
+								$mdgriffith$elm_ui$Element$inFront(
+								$author$project$Main$codeInput(model.nodes))
 							]),
 						A2(
 							$elm$core$List$map,
 							$mdgriffith$elm_ui$Element$inFront,
 							A2($elm$core$List$map, $author$project$Main$nodeEl, model.nodes))),
 					$author$project$Main$menuEl),
-					$author$project$Main$codeInput(model.nodes)
+					$mdgriffith$elm_ui$Element$none
 				])));
 };
 var $author$project$Main$main = $elm$browser$Browser$element(

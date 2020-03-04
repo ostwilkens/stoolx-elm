@@ -1,4 +1,4 @@
-module Node exposing (Node, decoder, encode, inputCount, outputCount, setCode)
+module Node exposing (Node, decoder, encode, inputCount, outputCount, setCode, init)
 
 import Json.Decode as Decode exposing (Decoder, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -67,3 +67,8 @@ outputCount node =
 inputCount : Node -> Int
 inputCount node =
     List.length (split "__" node.code) - 1
+
+
+init : Node
+init =
+    { pos = Vec2 200 300, selected = True, code = "x" }

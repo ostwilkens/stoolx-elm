@@ -2,10 +2,11 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events
-import Element exposing (Attribute, Color, Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, px, rgb, row, spacing, text, width)
+import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Events as Events
 import Element.Font as Font
+import Element.Border as Border
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
@@ -13,10 +14,9 @@ import Html.Events.Extra.Mouse as Mouse
 import Json.Decode as Decode
 import Json.Encode as Encode
 import List exposing (any, filter, head, map, repeat)
-import Math.Vector2 as Vector2
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Node exposing (Node, decoder, encode, inputCount, outputCount, setCode)
 import Ports exposing (storeNodes)
+import Shader exposing (fragmentShader, mesh, vertexShader)
 import Vec2 exposing (Vec2, encode)
 import WebGL
 
@@ -61,7 +61,7 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Browser.Events.onAnimationFrameDelta TimeDelta
+    Browser.Events.onAnimationFrameDelta UpdateTime
 
 
 type Msg
@@ -73,7 +73,7 @@ type Msg
     | Remove
     | Save
     | SetCode String
-    | TimeDelta Float
+    | UpdateTime Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -106,7 +106,7 @@ update msg model =
                 )
 
         Add ->
-            ( { model | nodes = new :: map deselect model.nodes }
+            ( { model | nodes = Node.init :: map deselect model.nodes }
             , Cmd.none
             )
 
@@ -125,7 +125,7 @@ update msg model =
             , Cmd.none
             )
 
-        TimeDelta delta ->
+        UpdateTime delta ->
             ( { model | time = model.time + delta }
             , Cmd.none
             )
@@ -145,11 +145,6 @@ decodeStoredNodes nodesJson =
 
         Err _ ->
             []
-
-
-new : Node
-new =
-    { pos = Vec2 200 300, selected = True, code = "x" }
 
 
 select : Node -> Node -> Node
@@ -173,7 +168,7 @@ drag offset node =
 
 red : Color
 red =
-    rgb 0.6 0.1 0.1
+    rgb 0.8 0.1 0.1
 
 
 gray : Color
@@ -186,6 +181,11 @@ darkGray =
     rgb 0.15 0.15 0.15
 
 
+lightGray : Color
+lightGray =
+    rgb 0.43 0.43 0.43
+
+
 black : Color
 black =
     rgb 0 0 0
@@ -196,13 +196,13 @@ white =
     rgb 1 1 1
 
 
-nodeColor : Node -> Color
-nodeColor node =
-    if node.selected then
-        red
+-- nodeColor : Node -> Color
+-- nodeColor node =
+--     if node.selected then
+--         lightGray
 
-    else
-        gray
+--     else
+--         gray
 
 
 getSelectedCode : List Node -> String
@@ -261,6 +261,20 @@ saveButton =
         }
 
 
+codeFont : List Font.Font
+codeFont =
+    [ Font.typeface "Courier New"
+    , Font.sansSerif
+    ]
+
+
+narrowFont : List Font.Font
+narrowFont =
+    [ Font.typeface "Arial Narrow"
+    , Font.sansSerif
+    ]
+
+
 codeInput : List Node -> Element Msg
 codeInput nodes =
     if any (\n -> n.selected) nodes then
@@ -269,6 +283,9 @@ codeInput nodes =
             , width (px 300)
             , Background.color gray
             , Font.color white
+            , Font.size 14
+            , Font.family codeFont
+            , alignRight
             ]
             { label = Input.labelHidden "code"
             , onChange = SetCode
@@ -279,70 +296,6 @@ codeInput nodes =
 
     else
         Element.none
-
-
-type alias Vertex =
-    { position : Vec3
-    }
-
-
-mesh : WebGL.Mesh Vertex
-mesh =
-    WebGL.triangles
-        [ ( Vertex (vec3 -1 1 0)
-          , Vertex (vec3 1 1 0)
-          , Vertex (vec3 -1 -1 0)
-          )
-        , ( Vertex (vec3 -1 -1 0)
-          , Vertex (vec3 1 1 0)
-          , Vertex (vec3 1 -1 0)
-          )
-        ]
-
-
-type alias Uniforms =
-    { time : Float }
-
-
-vertexShader : WebGL.Shader Vertex Uniforms { vFragCoord : Vector2.Vec2 }
-vertexShader =
-    [glsl|
-        precision mediump float;
-        attribute vec3 position;
-        varying vec2 vFragCoord;
-
-        void main () {
-            gl_Position = vec4(position, 1.0);
-            vFragCoord = position.xy;
-        }
-    |]
-
-
-fragmentShader : WebGL.Shader {} Uniforms { vFragCoord : Vector2.Vec2 }
-fragmentShader =
-    [glsl|
-        precision mediump float;
-        varying vec2 vFragCoord;
-        uniform float time;
-
-        void main () {
-            vec2 uv = vFragCoord;
-            gl_FragColor = vec4(vec3(1.0, 0.0 + sin(time * 0.1), 0.0 + uv.x) * 0.1, 0.0);
-        }
-    |]
-
-
-glView : Float -> Element Msg
-glView time =
-    Element.html
-        (WebGL.toHtml
-            [ Html.Attributes.width 400
-            , Html.Attributes.height 800
-            , Html.Attributes.style "display" "block"
-            ]
-            [ WebGL.entity vertexShader fragmentShader mesh { time = time / 1000 }
-            ]
-        )
 
 
 view : Model -> Html Msg
@@ -356,12 +309,13 @@ view model =
                  , Events.onMouseUp StopDrag
                  , Background.color darkGray
                  , Events.onDoubleClick Deselect
-                 , Element.behindContent (glView model.time)
+                 , Element.behindContent (shaderEl model.time)
+                 , inFront (codeInput model.nodes)
                  ]
                     ++ map inFront (map nodeEl model.nodes)
                 )
                 menuEl
-            , codeInput model.nodes
+            , Element.none
             ]
 
 
@@ -369,6 +323,7 @@ menuEl : Element Msg
 menuEl =
     row
         [ alignBottom
+        , centerX
         , spacing 5
         ]
         [ addButton
@@ -384,9 +339,17 @@ codePreviewEl node =
         , centerY
         , Font.size 12
         , Font.color white
+        , Font.family narrowFont
         ]
         (text node.code)
 
+
+nodeBorderWidth : Node -> Attribute msg
+nodeBorderWidth node = 
+    if node.selected then
+        Border.width 3
+    else
+        Border.width 0
 
 nodeEl : Node -> Element Msg
 nodeEl node =
@@ -395,7 +358,9 @@ nodeEl node =
         , moveDown node.pos.y
         ]
         (column
-            [ Background.color (nodeColor node)
+            [ Background.color gray
+            , Border.color red
+            , nodeBorderWidth node
             , width (px 100)
             , height (px 100)
             , spacing 20
@@ -423,3 +388,15 @@ putEl =
         , Background.color (rgb 0.9 0.3 0.3)
         ]
         Element.none
+
+
+shaderEl : Float -> Element Msg
+shaderEl time =
+    Element.html
+        (WebGL.toHtml
+            [ Html.Attributes.style "height" "100%"
+            , Html.Attributes.style "width" "100%"
+            ]
+            [ WebGL.entity vertexShader fragmentShader mesh { time = time / 1000 }
+            ]
+        )
