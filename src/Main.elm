@@ -1,7 +1,12 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Dom
 import Browser.Events
+import Canvas
+import Canvas.Settings
+import Canvas.Settings.Line
+import Color
 import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, paddingXY, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -17,6 +22,7 @@ import List exposing (any, filter, head, map, repeat)
 import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, setCode)
 import Ports exposing (storeNodes)
 import Shader exposing (fragmentShader, mesh, vertexShader)
+import Task
 import Vec2 exposing (Vec2, encode)
 import WebGL
 
@@ -27,6 +33,7 @@ type alias Model =
     , lastCursorPos : Vec2
     , time : Float
     , connecting : Bool
+    , size : ( Float, Float )
     }
 
 
@@ -46,8 +53,9 @@ init flags =
       , lastCursorPos = Vec2 0 0
       , time = 0
       , connecting = False
+      , size = ( 0, 0 )
       }
-    , Cmd.none
+    , Task.perform InitSize Browser.Dom.getViewport
     )
 
 
@@ -63,7 +71,10 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Browser.Events.onAnimationFrameDelta UpdateTime
+    Sub.batch
+        [ Browser.Events.onAnimationFrameDelta UpdateTime
+        , Browser.Events.onResize (\w h -> Resize ( toFloat w, toFloat h ))
+        ]
 
 
 type Msg
@@ -77,6 +88,8 @@ type Msg
     | SetCode String
     | UpdateTime Float
     | StartConnect
+    | Resize ( Float, Float )
+    | InitSize Browser.Dom.Viewport
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -139,6 +152,16 @@ update msg model =
 
         StartConnect ->
             ( { model | connecting = True }
+            , Cmd.none
+            )
+
+        Resize ( w, h ) ->
+            ( { model | size = ( w, h ) }
+            , Cmd.none
+            )
+
+        InitSize viewport ->
+            ( { model | size = ( viewport.viewport.width, viewport.viewport.height ) }
             , Cmd.none
             )
 
@@ -310,12 +333,12 @@ view model =
                  , height fill
                  , htmlAttribute (Mouse.onMove (clientPos >> Drag))
                  , Events.onMouseUp Release
-                 , Background.color darkGray
                  , Events.onDoubleClick Deselect
                  , Element.behindContent (shaderEl model.time)
                  , inFront (codeInput model.nodes)
                  ]
                     ++ map inFront (map nodeEl model.nodes)
+                    ++ [ inFront (canvasEl model.size) ]
                 )
                 menuEl
             , Element.none
@@ -391,6 +414,7 @@ nodeEl node =
         )
 
 
+
 -- rita upp linje med canvas overlay
 -- från node.pos till node.pos med offset beroende på typ/antal
 
@@ -422,3 +446,29 @@ shaderEl time =
             [ WebGL.entity vertexShader fragmentShader mesh { time = time / 1000 }
             ]
         )
+
+
+canvasEl : ( Float, Float ) -> Element Msg
+canvasEl ( width, height ) =
+    Element.html
+        (Canvas.toHtml ( floor width, floor height )
+            [ Html.Attributes.style "pointer-events" "none"
+            ]
+            [ Canvas.shapes [ Canvas.Settings.fill (Color.rgba 0 0 0 0) ]
+                [ Canvas.rect ( 0, 0 ) width height ]
+            , Canvas.clear ( 0, 0 ) width height
+            , renderLine ( 10, 10 ) ( 100, 100 )
+            ]
+        )
+
+
+renderLine : ( Float, Float ) -> ( Float, Float ) -> Canvas.Renderable
+renderLine ( ax, ay ) ( bx, by ) =
+    Canvas.shapes
+        [ Canvas.Settings.stroke (Color.rgba 0 1 0 0.7)
+        , Canvas.Settings.Line.lineWidth 5
+        ]
+        [ Canvas.path ( ax, ay )
+            [ Canvas.lineTo ( bx, by )
+            ]
+        ]

@@ -51,6 +51,6 @@ fragmentShader =
 
         void main () {
             vec2 uv = vFragCoord;
-            gl_FragColor = vec4(vec3(1.0, 0.0 + sin(time * 0.1), 0.0 + uv.x) * 0.1, 0.0);
+            gl_FragColor = vec4(vec3(1.0, 0.0 + sin(time * 0.1), 0.0 + uv.x) * 0.2, 1.0);
         }
     |]
