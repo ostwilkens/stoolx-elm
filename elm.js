@@ -6910,6 +6910,7 @@ var $author$project$Main$init = function (flags) {
 	}();
 	return _Utils_Tuple2(
 		{
+			connecting: false,
 			dragging: false,
 			lastCursorPos: A2($author$project$Vec2$Vec2, 0, 0),
 			nodes: nodes,
@@ -7169,11 +7170,12 @@ var $author$project$Main$update = F2(
 		switch (msg.$) {
 			case 'Select':
 				var node = msg.a;
+				var startDragging = !model.connecting;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
-							dragging: true,
+							dragging: startDragging,
 							nodes: A2(
 								$elm$core$List$map,
 								$author$project$Main$select(node),
@@ -7188,11 +7190,11 @@ var $author$project$Main$update = F2(
 							nodes: A2($elm$core$List$map, $author$project$Main$deselect, model.nodes)
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'StopDrag':
+			case 'Release':
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{dragging: false}),
+						{connecting: false, dragging: false}),
 					$elm$core$Platform$Cmd$none);
 			case 'Drag':
 				var pos = msg.a;
@@ -7252,12 +7254,18 @@ var $author$project$Main$update = F2(
 								model.nodes)
 						}),
 					$elm$core$Platform$Cmd$none);
-			default:
+			case 'UpdateTime':
 				var delta = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{time: model.time + delta}),
+					$elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{connecting: true}),
 					$elm$core$Platform$Cmd$none);
 		}
 	});
@@ -7266,7 +7274,7 @@ var $author$project$Main$Deselect = {$: 'Deselect'};
 var $author$project$Main$Drag = function (a) {
 	return {$: 'Drag', a: a};
 };
-var $author$project$Main$StopDrag = {$: 'StopDrag'};
+var $author$project$Main$Release = {$: 'Release'};
 var $mdgriffith$elm_ui$Internal$Model$Behind = {$: 'Behind'};
 var $mdgriffith$elm_ui$Internal$Model$Nearby = F2(
 	function (a, b) {
@@ -14296,25 +14304,13 @@ var $mdgriffith$elm_ui$Element$Input$button = F2(
 				_List_fromArray(
 					[label])));
 	});
-var $mdgriffith$elm_ui$Element$padding = function (x) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$StyleClass,
-		$mdgriffith$elm_ui$Internal$Flag$padding,
-		A5(
-			$mdgriffith$elm_ui$Internal$Model$PaddingStyle,
-			'p-' + $elm$core$String$fromInt(x),
-			x,
-			x,
-			x,
-			x));
-};
 var $author$project$Main$red = A3($mdgriffith$elm_ui$Element$rgb, 0.8, 0.1, 0.1);
 var $author$project$Main$addButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$Background$color($author$project$Main$red),
-			$mdgriffith$elm_ui$Element$padding(5)
+			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
 		]),
 	{
 		label: $mdgriffith$elm_ui$Element$text('add'),
@@ -14325,15 +14321,21 @@ var $mdgriffith$elm_ui$Internal$Model$AlignY = function (a) {
 };
 var $mdgriffith$elm_ui$Internal$Model$Bottom = {$: 'Bottom'};
 var $mdgriffith$elm_ui$Element$alignBottom = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Bottom);
+var $author$project$Main$black = A3($mdgriffith$elm_ui$Element$rgb, 0, 0, 0);
 var $mdgriffith$elm_ui$Internal$Model$CenterX = {$: 'CenterX'};
 var $mdgriffith$elm_ui$Element$centerX = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$CenterX);
+var $author$project$Main$narrowFont = _List_fromArray(
+	[
+		$mdgriffith$elm_ui$Element$Font$typeface('Arial Narrow'),
+		$mdgriffith$elm_ui$Element$Font$sansSerif
+	]);
 var $author$project$Main$Remove = {$: 'Remove'};
 var $author$project$Main$removeButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$Background$color($author$project$Main$red),
-			$mdgriffith$elm_ui$Element$padding(5)
+			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
 		]),
 	{
 		label: $mdgriffith$elm_ui$Element$text('remove'),
@@ -14363,7 +14365,7 @@ var $author$project$Main$saveButton = A2(
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$Background$color($author$project$Main$red),
-			$mdgriffith$elm_ui$Element$padding(5)
+			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
 		]),
 	{
 		label: $mdgriffith$elm_ui$Element$text('save'),
@@ -14375,7 +14377,10 @@ var $author$project$Main$menuEl = A2(
 		[
 			$mdgriffith$elm_ui$Element$alignBottom,
 			$mdgriffith$elm_ui$Element$centerX,
-			$mdgriffith$elm_ui$Element$spacing(5)
+			$mdgriffith$elm_ui$Element$spacing(5),
+			$mdgriffith$elm_ui$Element$Font$family($author$project$Main$narrowFont),
+			$mdgriffith$elm_ui$Element$Font$size(18),
+			$mdgriffith$elm_ui$Element$Font$color($author$project$Main$black)
 		]),
 	_List_fromArray(
 		[$author$project$Main$addButton, $author$project$Main$removeButton, $author$project$Main$saveButton]));
@@ -14386,11 +14391,62 @@ var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
 var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
 var $mdgriffith$elm_ui$Internal$Model$CenterY = {$: 'CenterY'};
 var $mdgriffith$elm_ui$Element$centerY = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$CenterY);
-var $author$project$Main$narrowFont = _List_fromArray(
-	[
-		$mdgriffith$elm_ui$Element$Font$typeface('Arial Narrow'),
-		$mdgriffith$elm_ui$Element$Font$sansSerif
-	]);
+var $elm$core$String$replace = F3(
+	function (before, after, string) {
+		return A2(
+			$elm$core$String$join,
+			after,
+			A2($elm$core$String$split, before, string));
+	});
+var $elm$core$String$trim = _String_trim;
+var $author$project$Node$previewCode = function (node) {
+	return $elm$core$String$trim(
+		A3(
+			$elm$core$String$replace,
+			'  ',
+			' ',
+			A3(
+				$elm$core$String$replace,
+				',',
+				' ',
+				A3(
+					$elm$core$String$replace,
+					')',
+					' ',
+					A3(
+						$elm$core$String$replace,
+						'(',
+						' ',
+						A3(
+							$elm$core$String$replace,
+							'__3',
+							'',
+							A3(
+								$elm$core$String$replace,
+								'__2',
+								'',
+								A3(
+									$elm$core$String$replace,
+									'__1',
+									'',
+									A3(
+										$elm$core$String$replace,
+										'__0',
+										'',
+										A3(
+											$elm$core$String$replace,
+											'vec4',
+											'',
+											A3(
+												$elm$core$String$replace,
+												'vec3',
+												'',
+												A3(
+													$elm$core$String$replace,
+													'vec2',
+													'',
+													A3($elm$core$String$replace, 'float', '', node.code)))))))))))));
+};
 var $author$project$Main$codePreviewEl = function (node) {
 	return A2(
 		$mdgriffith$elm_ui$Element$el,
@@ -14402,7 +14458,8 @@ var $author$project$Main$codePreviewEl = function (node) {
 				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$white),
 				$mdgriffith$elm_ui$Element$Font$family($author$project$Main$narrowFont)
 			]),
-		$mdgriffith$elm_ui$Element$text(node.code));
+		$mdgriffith$elm_ui$Element$text(
+			$author$project$Node$previewCode(node)));
 };
 var $mdgriffith$elm_ui$Element$column = F2(
 	function (attrs, children) {
@@ -14442,8 +14499,11 @@ var $mdgriffith$elm_ui$Element$moveRight = function (x) {
 		$mdgriffith$elm_ui$Internal$Flag$moveX,
 		$mdgriffith$elm_ui$Internal$Model$MoveX(x));
 };
+var $author$project$Main$nodeBorderColor = function (node) {
+	return node.selected ? $mdgriffith$elm_ui$Element$Border$color($author$project$Main$red) : $mdgriffith$elm_ui$Element$Border$color($author$project$Main$black);
+};
 var $author$project$Main$nodeBorderWidth = function (node) {
-	return node.selected ? $mdgriffith$elm_ui$Element$Border$width(3) : $mdgriffith$elm_ui$Element$Border$width(0);
+	return node.selected ? $mdgriffith$elm_ui$Element$Border$width(3) : $mdgriffith$elm_ui$Element$Border$width(1);
 };
 var $elm$html$Html$Events$onMouseDown = function (msg) {
 	return A2(
@@ -14474,6 +14534,7 @@ var $author$project$Node$outputCount = function (node) {
 			return 0;
 	}
 };
+var $author$project$Main$StartConnect = {$: 'StartConnect'};
 var $author$project$Main$putEl = A2(
 	$mdgriffith$elm_ui$Element$el,
 	_List_fromArray(
@@ -14483,7 +14544,8 @@ var $author$project$Main$putEl = A2(
 			$mdgriffith$elm_ui$Element$height(
 			$mdgriffith$elm_ui$Element$px(20)),
 			$mdgriffith$elm_ui$Element$Background$color(
-			A3($mdgriffith$elm_ui$Element$rgb, 0.9, 0.3, 0.3))
+			A3($mdgriffith$elm_ui$Element$rgb, 0.9, 0.3, 0.3)),
+			$mdgriffith$elm_ui$Element$Events$onMouseDown($author$project$Main$StartConnect)
 		]),
 	$mdgriffith$elm_ui$Element$none);
 var $elm$core$List$repeatHelp = F3(
@@ -14532,7 +14594,7 @@ var $author$project$Main$nodeEl = function (node) {
 			_List_fromArray(
 				[
 					$mdgriffith$elm_ui$Element$Background$color($author$project$Main$gray),
-					$mdgriffith$elm_ui$Element$Border$color($author$project$Main$red),
+					$author$project$Main$nodeBorderColor(node),
 					$author$project$Main$nodeBorderWidth(node),
 					$mdgriffith$elm_ui$Element$width(
 					$mdgriffith$elm_ui$Element$px(100)),
@@ -14856,7 +14918,7 @@ var $author$project$Main$view = function (model) {
 								$mdgriffith$elm_ui$Element$htmlAttribute(
 								$mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove(
 									A2($elm$core$Basics$composeR, $author$project$Main$clientPos, $author$project$Main$Drag))),
-								$mdgriffith$elm_ui$Element$Events$onMouseUp($author$project$Main$StopDrag),
+								$mdgriffith$elm_ui$Element$Events$onMouseUp($author$project$Main$Release),
 								$mdgriffith$elm_ui$Element$Background$color($author$project$Main$darkGray),
 								$mdgriffith$elm_ui$Element$Events$onDoubleClick($author$project$Main$Deselect),
 								$mdgriffith$elm_ui$Element$behindContent(

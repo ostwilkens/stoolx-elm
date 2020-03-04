@@ -1,10 +1,10 @@
-module Node exposing (Node, decoder, encode, inputCount, outputCount, setCode, init)
+module Node exposing (Node, decoder, encode, init, inputCount, outputCount, setCode, previewCode)
 
 import Json.Decode as Decode exposing (Decoder, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)
 import Json.Encode as Encode
 import List exposing (head)
-import String exposing (split)
+import String exposing (replace, split)
 import Vec2 exposing (Vec2)
 
 
@@ -72,3 +72,20 @@ inputCount node =
 init : Node
 init =
     { pos = Vec2 200 300, selected = True, code = "x" }
+
+
+previewCode : Node -> String
+previewCode node =
+    replace "float" "" node.code
+        |> replace "vec2" ""
+        |> replace "vec3" ""
+        |> replace "vec4" ""
+        |> replace "__0" ""
+        |> replace "__1" ""
+        |> replace "__2" ""
+        |> replace "__3" ""
+        |> replace "(" " "
+        |> replace ")" " "
+        |> replace "," " "
+        |> replace "  " " "
+        |> String.trim

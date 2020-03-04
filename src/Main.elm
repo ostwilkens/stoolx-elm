@@ -2,11 +2,11 @@ module Main exposing (main)
 
 import Browser
 import Browser.Events
-import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, px, rgb, row, spacing, text, width)
+import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, paddingXY, px, rgb, row, spacing, text, width)
 import Element.Background as Background
+import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import Element.Border as Border
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
@@ -14,7 +14,7 @@ import Html.Events.Extra.Mouse as Mouse
 import Json.Decode as Decode
 import Json.Encode as Encode
 import List exposing (any, filter, head, map, repeat)
-import Node exposing (Node, decoder, encode, inputCount, outputCount, setCode)
+import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, setCode)
 import Ports exposing (storeNodes)
 import Shader exposing (fragmentShader, mesh, vertexShader)
 import Vec2 exposing (Vec2, encode)
@@ -26,6 +26,7 @@ type alias Model =
     , dragging : Bool
     , lastCursorPos : Vec2
     , time : Float
+    , connecting : Bool
     }
 
 
@@ -44,6 +45,7 @@ init flags =
       , dragging = False
       , lastCursorPos = Vec2 0 0
       , time = 0
+      , connecting = False
       }
     , Cmd.none
     )
@@ -67,20 +69,25 @@ subscriptions _ =
 type Msg
     = Select Node
     | Deselect
-    | StopDrag
+    | Release
     | Drag Vec2
     | Add
     | Remove
     | Save
     | SetCode String
     | UpdateTime Float
+    | StartConnect
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Select node ->
-            ( { model | nodes = map (select node) model.nodes, dragging = True }
+            let
+                startDragging =
+                    not model.connecting
+            in
+            ( { model | nodes = map (select node) model.nodes, dragging = startDragging }
             , Cmd.none
             )
 
@@ -89,8 +96,8 @@ update msg model =
             , Cmd.none
             )
 
-        StopDrag ->
-            ( { model | dragging = False }
+        Release ->
+            ( { model | dragging = False, connecting = False }
             , Cmd.none
             )
 
@@ -127,6 +134,11 @@ update msg model =
 
         UpdateTime delta ->
             ( { model | time = model.time + delta }
+            , Cmd.none
+            )
+
+        StartConnect ->
+            ( { model | connecting = True }
             , Cmd.none
             )
 
@@ -196,15 +208,6 @@ white =
     rgb 1 1 1
 
 
--- nodeColor : Node -> Color
--- nodeColor node =
---     if node.selected then
---         lightGray
-
---     else
---         gray
-
-
 getSelectedCode : List Node -> String
 getSelectedCode nodes =
     let
@@ -232,7 +235,7 @@ addButton : Element Msg
 addButton =
     Input.button
         [ Background.color red
-        , padding 5
+        , paddingXY 10 6
         ]
         { label = text "add"
         , onPress = Just Add
@@ -243,7 +246,7 @@ removeButton : Element Msg
 removeButton =
     Input.button
         [ Background.color red
-        , padding 5
+        , paddingXY 10 6
         ]
         { label = text "remove"
         , onPress = Just Remove
@@ -254,7 +257,7 @@ saveButton : Element Msg
 saveButton =
     Input.button
         [ Background.color red
-        , padding 5
+        , paddingXY 10 6
         ]
         { label = text "save"
         , onPress = Just Save
@@ -306,7 +309,7 @@ view model =
                 ([ width fill
                  , height fill
                  , htmlAttribute (Mouse.onMove (clientPos >> Drag))
-                 , Events.onMouseUp StopDrag
+                 , Events.onMouseUp Release
                  , Background.color darkGray
                  , Events.onDoubleClick Deselect
                  , Element.behindContent (shaderEl model.time)
@@ -325,6 +328,9 @@ menuEl =
         [ alignBottom
         , centerX
         , spacing 5
+        , Font.family narrowFont
+        , Font.size 18
+        , Font.color black
         ]
         [ addButton
         , removeButton
@@ -341,15 +347,26 @@ codePreviewEl node =
         , Font.color white
         , Font.family narrowFont
         ]
-        (text node.code)
+        (text (previewCode node))
 
 
-nodeBorderWidth : Node -> Attribute msg
-nodeBorderWidth node = 
+nodeBorderWidth : Node -> Attribute Msg
+nodeBorderWidth node =
     if node.selected then
         Border.width 3
+
     else
-        Border.width 0
+        Border.width 1
+
+
+nodeBorderColor : Node -> Attribute Msg
+nodeBorderColor node =
+    if node.selected then
+        Border.color red
+
+    else
+        Border.color black
+
 
 nodeEl : Node -> Element Msg
 nodeEl node =
@@ -359,7 +376,7 @@ nodeEl node =
         ]
         (column
             [ Background.color gray
-            , Border.color red
+            , nodeBorderColor node
             , nodeBorderWidth node
             , width (px 100)
             , height (px 100)
@@ -374,18 +391,23 @@ nodeEl node =
         )
 
 
-putsEl : Int -> Attribute msg -> Element msg
+-- rita upp linje med canvas overlay
+-- från node.pos till node.pos med offset beroende på typ/antal
+
+
+putsEl : Int -> Attribute Msg -> Element Msg
 putsEl n alignment =
     row [ alignment, spacing 10, centerX ]
         (repeat n putEl)
 
 
-putEl : Element msg
+putEl : Element Msg
 putEl =
     el
         [ width (px 20)
         , height (px 20)
         , Background.color (rgb 0.9 0.3 0.3)
+        , Events.onMouseDown StartConnect
         ]
         Element.none
 
