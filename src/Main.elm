@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Element exposing (Attribute, Color, Element, alignBottom, alignTop, centerX, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, px, rgb, row, spacing, text, width)
+import Element exposing (Attribute, Color, Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Events as Events
 import Element.Font as Font
@@ -10,8 +10,8 @@ import Html exposing (Html)
 import Html.Events.Extra.Mouse as Mouse
 import Json.Decode as Decode
 import Json.Encode as Encode
-import List exposing (filter, head, map, repeat)
-import Node exposing (Node, decoder, encode)
+import List exposing (any, filter, head, map, repeat)
+import Node exposing (Node, decoder, encode, inputCount, outputCount, setCode)
 import Ports exposing (storeNodes)
 import Vec2 exposing (Vec2, encode)
 
@@ -21,26 +21,6 @@ type alias Model =
     , dragging : Bool
     , lastCursorPos : Vec2
     }
-
-
-main : Program (Maybe Encode.Value) Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = \_ -> Sub.none
-        }
-
-
-type Msg
-    = Select Node
-    | StopDrag
-    | Drag Vec2
-    | Add
-    | Remove
-    | Save
-    | SetCode String
 
 
 init : Maybe Encode.Value -> ( Model, Cmd Msg )
@@ -60,6 +40,77 @@ init flags =
       }
     , Cmd.none
     )
+
+
+main : Program (Maybe Encode.Value) Model Msg
+main =
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = \_ -> Sub.none
+        }
+
+
+type Msg
+    = Select Node
+    | Deselect
+    | StopDrag
+    | Drag Vec2
+    | Add
+    | Remove
+    | Save
+    | SetCode String
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        Select node ->
+            ( { model | nodes = map (select node) model.nodes, dragging = True }
+            , Cmd.none
+            )
+
+        Deselect ->
+            ( { model | nodes = map deselect model.nodes }
+            , Cmd.none
+            )
+
+        StopDrag ->
+            ( { model | dragging = False }
+            , Cmd.none
+            )
+
+        Drag pos ->
+            if model.dragging then
+                ( { model | nodes = map (drag (Vec2.sub pos model.lastCursorPos)) model.nodes, lastCursorPos = pos }
+                , Cmd.none
+                )
+
+            else
+                ( { model | lastCursorPos = pos }
+                , Cmd.none
+                )
+
+        Add ->
+            ( { model | nodes = new :: map deselect model.nodes }
+            , Cmd.none
+            )
+
+        Remove ->
+            ( { model | nodes = filter (\n -> not n.selected) model.nodes }
+            , Cmd.none
+            )
+
+        Save ->
+            ( model
+            , saveNodes model.nodes
+            )
+
+        SetCode code ->
+            ( { model | nodes = map (setCode code) model.nodes }
+            , Cmd.none
+            )
 
 
 saveNodes : List Node -> Cmd msg
@@ -102,51 +153,6 @@ drag offset node =
         node
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Select node ->
-            ( { model | nodes = map (select node) model.nodes, dragging = True }
-            , Cmd.none
-            )
-
-        StopDrag ->
-            ( { model | dragging = False }
-            , Cmd.none
-            )
-
-        Drag pos ->
-            if model.dragging then
-                ( { model | nodes = map (drag (Vec2.sub pos model.lastCursorPos)) model.nodes, lastCursorPos = pos }
-                , Cmd.none
-                )
-
-            else
-                ( { model | lastCursorPos = pos }
-                , Cmd.none
-                )
-
-        Add ->
-            ( { model | nodes = new :: map deselect model.nodes }
-            , Cmd.none
-            )
-
-        Remove ->
-            ( { model | nodes = filter (\n -> not n.selected) model.nodes }
-            , Cmd.none
-            )
-
-        Save ->
-            ( model
-            , saveNodes model.nodes
-            )
-
-        SetCode code ->
-            ( { model | nodes = map (setCode code) model.nodes }
-            , Cmd.none
-            )
-
-
 red : Color
 red =
     rgb 0.6 0.1 0.1
@@ -155,6 +161,11 @@ red =
 gray : Color
 gray =
     rgb 0.3 0.3 0.3
+
+
+darkGray : Color
+darkGray =
+    rgb 0.15 0.15 0.15
 
 
 black : Color
@@ -187,16 +198,7 @@ getSelectedCode nodes =
             node.code
 
         Nothing ->
-            "// no selection"
-
-
-setCode : String -> Node -> Node
-setCode code node =
-    if node.selected then
-        { node | code = code }
-
-    else
-        node
+            ""
 
 
 clientPos : Mouse.Event -> Vec2
@@ -243,18 +245,22 @@ saveButton =
 
 codeInput : List Node -> Element Msg
 codeInput nodes =
-    Input.multiline
-        [ height fill
-        , width (px 300)
-        , Background.color gray
-        , Font.color white
-        ]
-        { label = Input.labelHidden "code"
-        , onChange = SetCode
-        , placeholder = Nothing
-        , text = getSelectedCode nodes
-        , spellcheck = False
-        }
+    if any (\n -> n.selected) nodes then
+        Input.multiline
+            [ height fill
+            , width (px 300)
+            , Background.color gray
+            , Font.color white
+            ]
+            { label = Input.labelHidden "code"
+            , onChange = SetCode
+            , placeholder = Nothing
+            , text = getSelectedCode nodes
+            , spellcheck = False
+            }
+
+    else
+        Element.none
 
 
 view : Model -> Html Msg
@@ -266,7 +272,8 @@ view model =
                  , height fill
                  , htmlAttribute (Mouse.onMove (clientPos >> Drag))
                  , Events.onMouseUp StopDrag
-                 , Background.color black
+                 , Background.color darkGray
+                 , Events.onDoubleClick Deselect
                  ]
                     ++ map inFront (map nodeEl model.nodes)
                 )
@@ -279,13 +286,23 @@ menuEl : Element Msg
 menuEl =
     row
         [ alignBottom
-        , centerX
         , spacing 5
         ]
         [ addButton
         , removeButton
         , saveButton
         ]
+
+
+codePreviewEl : Node -> Element Msg
+codePreviewEl node =
+    el
+        [ centerX
+        , centerY
+        , Font.size 12
+        , Font.color white
+        ]
+        (text node.code)
 
 
 nodeEl : Node -> Element Msg
@@ -300,9 +317,11 @@ nodeEl node =
             , height (px 100)
             , spacing 20
             , Events.onMouseDown (Select node)
+            , Font.size 10
             ]
-            [ putsEl 3 alignTop
-            , putsEl 3 alignBottom
+            [ putsEl (outputCount node) alignTop
+            , codePreviewEl node
+            , putsEl (inputCount node) alignBottom
             ]
         )
 
