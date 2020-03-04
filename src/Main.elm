@@ -7,39 +7,32 @@ import Element.Events as Events
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Events.Extra.Mouse as Mouse
+import Json.Decode as Decode exposing (Decoder, string)
+import Json.Decode.Pipeline exposing (hardcoded, required)
+import Json.Encode as Encode
 import List exposing (filter, map, repeat)
+import Node exposing (Node, decoder, encode)
+import Ports exposing (storeNodes)
+import Vec2 exposing (Vec2, encode)
 
 
-main : Program () Model Msg
+main : Program (Maybe Encode.Value) Model Msg
 main =
-    Browser.sandbox
+    Browser.element
         { init = init
         , view = view
         , update = update
+        , subscriptions = \_ -> Sub.none
         }
 
 
-type alias Vec2 =
-    { x : Float
-    , y : Float
-    }
-
-
-add : Vec2 -> Vec2 -> Vec2
-add a b =
-    Vec2 (a.x + b.x) (a.y + b.y)
-
-
-sub : Vec2 -> Vec2 -> Vec2
-sub a b =
-    Vec2 (a.x - b.x) (a.y - b.y)
-
-
-type alias Node =
-    { pos : Vec2
-    , selected : Bool
-    , code : String
-    }
+type Msg
+    = Select Node
+    | StopDrag
+    | Drag Vec2
+    | Add
+    | Remove
+    | Save
 
 
 type alias Model =
@@ -49,15 +42,39 @@ type alias Model =
     }
 
 
-init : Model
-init =
-    { nodes =
-        [ { pos = Vec2 100 100, selected = False, code = "a" }
-        , { pos = Vec2 200 200, selected = False, code = "b" }
-        ]
-    , dragging = False
-    , lastCursorPos = Vec2 0 0
-    }
+init : Maybe Encode.Value -> ( Model, Cmd Msg )
+init flags =
+    let
+        nodes =
+            case flags of
+                Just nodesJson ->
+                    decodeStoredNodes nodesJson
+
+                Nothing ->
+                    []
+    in
+    ( { nodes = nodes
+      , dragging = False
+      , lastCursorPos = Vec2 0 0
+      }
+    , Cmd.none
+    )
+
+
+saveNodes : List Node -> Cmd msg
+saveNodes nodes =
+    Encode.list Node.encode nodes
+        |> Ports.storeNodes
+
+
+decodeStoredNodes : Encode.Value -> List Node
+decodeStoredNodes nodesJson =
+    case Decode.decodeValue (Decode.list Node.decoder) nodesJson of
+        Ok nodes ->
+            nodes
+
+        Err _ ->
+            []
 
 
 new : Node
@@ -78,41 +95,50 @@ deselect node =
 drag : Vec2 -> Node -> Node
 drag offset node =
     if node.selected then
-        { node | pos = add node.pos offset }
+        { node | pos = Vec2.add node.pos offset }
 
     else
         node
 
 
-type Msg
-    = Select Node
-    | StopDrag
-    | Drag Vec2
-    | Add
-    | Remove
-
-
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Select node ->
-            { model | nodes = map (select node) model.nodes, dragging = True }
+            ( { model | nodes = map (select node) model.nodes, dragging = True }
+            , Cmd.none
+            )
 
         StopDrag ->
-            { model | dragging = False }
+            ( { model | dragging = False }
+            , Cmd.none
+            )
 
         Drag pos ->
             if model.dragging then
-                { model | nodes = map (drag (sub pos model.lastCursorPos)) model.nodes, lastCursorPos = pos }
+                ( { model | nodes = map (drag (Vec2.sub pos model.lastCursorPos)) model.nodes, lastCursorPos = pos }
+                , Cmd.none
+                )
 
             else
-                { model | lastCursorPos = pos }
+                ( { model | lastCursorPos = pos }
+                , Cmd.none
+                )
 
         Add ->
-            { model | nodes = new :: map deselect model.nodes }
+            ( { model | nodes = new :: map deselect model.nodes }
+            , Cmd.none
+            )
 
         Remove ->
-            { model | nodes = filter (\n -> not n.selected) model.nodes }
+            ( { model | nodes = filter (\n -> not n.selected) model.nodes }
+            , Cmd.none
+            )
+
+        Save ->
+            ( model
+            , saveNodes model.nodes
+            )
 
 
 red : Color
@@ -148,25 +174,6 @@ clientPos event =
     Vec2 x y
 
 
-viewNode : Node -> Element Msg
-viewNode node =
-    el
-        [ moveRight node.pos.x
-        , moveDown node.pos.y
-        ]
-        (column
-            [ Background.color (nodeColor node)
-            , width (px 100)
-            , height (px 100)
-            , spacing 20
-            , Events.onMouseDown (Select node)
-            ]
-            [ puts 3 alignTop
-            , puts 3 alignBottom
-            ]
-        )
-
-
 addButton : Element Msg
 addButton =
     Input.button
@@ -189,14 +196,15 @@ removeButton =
         }
 
 
-menu : Element Msg
-menu =
-    row
-        [ alignBottom
-        , centerX
-        , spacing 5
+saveButton : Element Msg
+saveButton =
+    Input.button
+        [ Background.color red
+        , padding 5
         ]
-        [ addButton, removeButton ]
+        { label = text "save"
+        , onPress = Just Save
+        }
 
 
 view : Model -> Html Msg
@@ -210,9 +218,9 @@ view model =
                  , Events.onMouseUp StopDrag
                  , Background.color black
                  ]
-                    ++ map inFront (map viewNode model.nodes)
+                    ++ map inFront (map nodeEl model.nodes)
                 )
-                menu
+                menuEl
             , el
                 [ width (px 300)
                 , height fill
@@ -222,14 +230,46 @@ view model =
             ]
 
 
-puts : Int -> Attribute msg -> Element msg
-puts n alignment =
+menuEl : Element Msg
+menuEl =
+    row
+        [ alignBottom
+        , centerX
+        , spacing 5
+        ]
+        [ addButton
+        , removeButton
+        , saveButton
+        ]
+
+
+nodeEl : Node -> Element Msg
+nodeEl node =
+    el
+        [ moveRight node.pos.x
+        , moveDown node.pos.y
+        ]
+        (column
+            [ Background.color (nodeColor node)
+            , width (px 100)
+            , height (px 100)
+            , spacing 20
+            , Events.onMouseDown (Select node)
+            ]
+            [ putsEl 3 alignTop
+            , putsEl 3 alignBottom
+            ]
+        )
+
+
+putsEl : Int -> Attribute msg -> Element msg
+putsEl n alignment =
     row [ alignment, spacing 10, centerX ]
-        (repeat n put)
+        (repeat n putEl)
 
 
-put : Element msg
-put =
+putEl : Element msg
+putEl =
     el
         [ width (px 20)
         , height (px 20)
