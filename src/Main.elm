@@ -4,16 +4,23 @@ import Browser
 import Element exposing (Attribute, Color, Element, alignBottom, alignTop, centerX, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Events as Events
+import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
 import Html.Events.Extra.Mouse as Mouse
-import Json.Decode as Decode exposing (Decoder, string)
-import Json.Decode.Pipeline exposing (hardcoded, required)
+import Json.Decode as Decode
 import Json.Encode as Encode
-import List exposing (filter, map, repeat)
+import List exposing (filter, head, map, repeat)
 import Node exposing (Node, decoder, encode)
 import Ports exposing (storeNodes)
 import Vec2 exposing (Vec2, encode)
+
+
+type alias Model =
+    { nodes : List Node
+    , dragging : Bool
+    , lastCursorPos : Vec2
+    }
 
 
 main : Program (Maybe Encode.Value) Model Msg
@@ -33,13 +40,7 @@ type Msg
     | Add
     | Remove
     | Save
-
-
-type alias Model =
-    { nodes : List Node
-    , dragging : Bool
-    , lastCursorPos : Vec2
-    }
+    | SetCode String
 
 
 init : Maybe Encode.Value -> ( Model, Cmd Msg )
@@ -140,10 +141,15 @@ update msg model =
             , saveNodes model.nodes
             )
 
+        SetCode code ->
+            ( { model | nodes = map (setCode code) model.nodes }
+            , Cmd.none
+            )
+
 
 red : Color
 red =
-    rgb 0.9 0.1 0.1
+    rgb 0.6 0.1 0.1
 
 
 gray : Color
@@ -156,6 +162,11 @@ black =
     rgb 0 0 0
 
 
+white : Color
+white =
+    rgb 1 1 1
+
+
 nodeColor : Node -> Color
 nodeColor node =
     if node.selected then
@@ -163,6 +174,29 @@ nodeColor node =
 
     else
         gray
+
+
+getSelectedCode : List Node -> String
+getSelectedCode nodes =
+    let
+        selectedNodes =
+            filter (\n -> n.selected) nodes
+    in
+    case head selectedNodes of
+        Just node ->
+            node.code
+
+        Nothing ->
+            "// no selection"
+
+
+setCode : String -> Node -> Node
+setCode code node =
+    if node.selected then
+        { node | code = code }
+
+    else
+        node
 
 
 clientPos : Mouse.Event -> Vec2
@@ -207,6 +241,22 @@ saveButton =
         }
 
 
+codeInput : List Node -> Element Msg
+codeInput nodes =
+    Input.multiline
+        [ height fill
+        , width (px 300)
+        , Background.color gray
+        , Font.color white
+        ]
+        { label = Input.labelHidden "code"
+        , onChange = SetCode
+        , placeholder = Nothing
+        , text = getSelectedCode nodes
+        , spellcheck = False
+        }
+
+
 view : Model -> Html Msg
 view model =
     Element.layout [] <|
@@ -221,12 +271,7 @@ view model =
                     ++ map inFront (map nodeEl model.nodes)
                 )
                 menuEl
-            , el
-                [ width (px 300)
-                , height fill
-                , Background.color gray
-                ]
-                Element.none
+            , codeInput model.nodes
             ]
 
 
