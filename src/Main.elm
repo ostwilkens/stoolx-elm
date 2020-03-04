@@ -1,25 +1,31 @@
 module Main exposing (main)
 
 import Browser
+import Browser.Events
 import Element exposing (Attribute, Color, Element, alignBottom, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, px, rgb, row, spacing, text, width)
 import Element.Background as Background
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html exposing (Html)
+import Html.Attributes
 import Html.Events.Extra.Mouse as Mouse
 import Json.Decode as Decode
 import Json.Encode as Encode
 import List exposing (any, filter, head, map, repeat)
+import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Node exposing (Node, decoder, encode, inputCount, outputCount, setCode)
 import Ports exposing (storeNodes)
 import Vec2 exposing (Vec2, encode)
+import WebGL
 
 
 type alias Model =
     { nodes : List Node
     , dragging : Bool
     , lastCursorPos : Vec2
+    , time : Float
     }
 
 
@@ -37,6 +43,7 @@ init flags =
     ( { nodes = nodes
       , dragging = False
       , lastCursorPos = Vec2 0 0
+      , time = 0
       }
     , Cmd.none
     )
@@ -48,8 +55,13 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Browser.Events.onAnimationFrameDelta TimeDelta
 
 
 type Msg
@@ -61,6 +73,7 @@ type Msg
     | Remove
     | Save
     | SetCode String
+    | TimeDelta Float
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -109,6 +122,11 @@ update msg model =
 
         SetCode code ->
             ( { model | nodes = map (setCode code) model.nodes }
+            , Cmd.none
+            )
+
+        TimeDelta delta ->
+            ( { model | time = model.time + delta }
             , Cmd.none
             )
 
@@ -263,6 +281,82 @@ codeInput nodes =
         Element.none
 
 
+perspective : Float -> Mat4
+perspective t =
+    Mat4.mul
+        (Mat4.makePerspective 45 1 0.01 100)
+        (Mat4.makeLookAt (vec3 (4 * cos t) 0 (4 * sin t)) (vec3 0 0 0) (vec3 0 1 0))
+
+
+type alias Vertex =
+    { position : Vec3
+    , color : Vec3
+    }
+
+
+mesh : WebGL.Mesh Vertex
+mesh =
+    WebGL.triangles
+        [ ( Vertex (vec3 1 1 1) (vec3 1 0 0)
+          , Vertex (vec3 1 1 -1) (vec3 0 1 0)
+          , Vertex (vec3 1 -1 -1) (vec3 0 0 1)
+          )
+        , ( Vertex (vec3 1 -1 -1) (vec3 0 0 1)
+          , Vertex (vec3 1 -1 1) (vec3 0 0 0)
+          , Vertex (vec3 1 1 1) (vec3 1 0 0)
+          )
+        ]
+
+
+type alias Uniforms =
+    { perspective : Mat4
+    , time : Float
+    }
+
+
+vertexShader : WebGL.Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader =
+    [glsl|
+        attribute vec3 position;
+        attribute vec3 color;
+        uniform mat4 perspective;
+        uniform float time;
+        varying vec3 vcolor;
+
+        void main () {
+            gl_Position = perspective * vec4(position, 1.0);
+            // gl_Position.x = 2.0;
+            // gl_Position.y = sin(time) * 1000.0;
+            // vcolor = color + sin(time);
+            // gl_Position = vec4( position, 1.0 );
+        }
+    |]
+
+
+fragmentShader : WebGL.Shader {} Uniforms { vcolor : Vec3 }
+fragmentShader =
+    [glsl|
+        precision mediump float;
+        varying vec3 vcolor;
+
+        void main () {
+            gl_FragColor = vec4(vec3(1.0, 0.0, 0.0), 1.0);
+        }
+    |]
+
+
+glView : Float -> Element Msg
+glView time =
+    Element.html
+        (WebGL.toHtml
+            [ Html.Attributes.width 400
+            , Html.Attributes.height 800
+            ]
+            [ WebGL.entity vertexShader fragmentShader mesh { perspective = perspective 1000, time = time / 1000 }
+            ]
+        )
+
+
 view : Model -> Html Msg
 view model =
     Element.layout [] <|
@@ -274,6 +368,7 @@ view model =
                  , Events.onMouseUp StopDrag
                  , Background.color darkGray
                  , Events.onDoubleClick Deselect
+                 , Element.behindContent (glView model.time)
                  ]
                     ++ map inFront (map nodeEl model.nodes)
                 )
