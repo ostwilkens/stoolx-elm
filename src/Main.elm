@@ -21,7 +21,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 import List exposing (any, filter, head, map, maximum, range)
-import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, selected, setCode)
+import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, setCode)
 import Ports exposing (storeModel)
 import Shader exposing (fragmentShader, mesh, vertexShader)
 import Task
@@ -264,16 +264,6 @@ decodeStoredModel modelJson =
             { nodes = [], connections = [] }
 
 
-decodeStoredNodes : Encode.Value -> List Node
-decodeStoredNodes nodesJson =
-    case Decode.decodeValue (Decode.list Node.decoder) nodesJson of
-        Ok nodes ->
-            nodes
-
-        Err _ ->
-            []
-
-
 select : Node -> Node -> Node
 select target node =
     { node | selected = node == target }
@@ -312,11 +302,6 @@ connectionHasAnyNode nodes connection =
 connectionHasNode : Connection -> Node -> Bool
 connectionHasNode connection node =
     getId connection.input == node.id || getId connection.output == node.id
-
-
-nodeById : Model -> Int -> Maybe Node
-nodeById model id =
-    head (filter (\n -> n.id == id) model.nodes)
 
 
 connectSockets : Model -> Socket -> Socket -> Maybe Connection

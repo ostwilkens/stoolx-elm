@@ -1,6 +1,6 @@
 module Connection exposing (Connection, Socket(..), decoder, encode, getId, getIndex)
 
-import Json.Decode as Decode exposing (Decoder, int, string)
+import Json.Decode as Decode exposing (Decoder, int)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 
