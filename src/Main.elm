@@ -7,7 +7,7 @@ import Canvas
 import Canvas.Settings
 import Canvas.Settings.Line
 import Color
-import Connection exposing (Connection, SocketRef, SocketType(..), decoder)
+import Connection exposing (Connection, Socket, SocketType(..), decoder)
 import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, paddingXY, px, rgb, rgba, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -36,7 +36,7 @@ type alias Model =
     , time : Float
     , connecting : Bool
     , size : ( Float, Float )
-    , connectingSocketRef : Maybe SocketRef
+    , connectingSocket : Maybe Socket
     , connections : List Connection
     }
 
@@ -56,7 +56,7 @@ init flags =
                     decodeStoredModel modelJson
 
                 Nothing ->
-                    { nodes = [], connections = []}
+                    { nodes = [], connections = [] }
     in
     ( { nodes = partialModel.nodes
       , dragging = False
@@ -64,7 +64,7 @@ init flags =
       , time = 0
       , connecting = False
       , size = ( 0, 0 )
-      , connectingSocketRef = Nothing
+      , connectingSocket = Nothing
       , connections = partialModel.connections
       }
     , Task.perform InitSize Browser.Dom.getViewport
@@ -99,10 +99,10 @@ type Msg
     | Save
     | SetCode String
     | UpdateTime Float
-    | StartConnect SocketRef
+    | StartConnect Socket
     | Resize ( Float, Float )
     | InitSize Browser.Dom.Viewport
-    | EndConnect SocketRef
+    | EndConnect Socket
 
 
 nextId : Model -> Int
@@ -153,7 +153,7 @@ update msg model =
             )
 
         Remove ->
-            ( { model | nodes = filter (\n -> not n.selected) model.nodes }
+            ( removeSelected model
             , Cmd.none
             )
 
@@ -172,8 +172,8 @@ update msg model =
             , Cmd.none
             )
 
-        StartConnect socketRef ->
-            ( { model | connecting = True, connectingSocketRef = Just socketRef }
+        StartConnect socket ->
+            ( { model | connecting = True, connectingSocket = Just socket }
             , Cmd.none
             )
 
@@ -187,12 +187,12 @@ update msg model =
             , Cmd.none
             )
 
-        EndConnect socketRef ->
-            case model.connectingSocketRef of
-                Just justConnectingSocketRef ->
+        EndConnect socket ->
+            case model.connectingSocket of
+                Just justConnectingSocket ->
                     let
                         connection =
-                            connectSockets justConnectingSocketRef socketRef
+                            connectSockets justConnectingSocket socket
                     in
                     case connection of
                         Just justConnection ->
@@ -207,7 +207,7 @@ update msg model =
                     ( model, Cmd.none )
 
 
-connectSockets : SocketRef -> SocketRef -> Maybe Connection
+connectSockets : Socket -> Socket -> Maybe Connection
 connectSockets a b =
     let
         input =
@@ -255,10 +255,6 @@ modelDecoder =
         |> required "connections" (Decode.list Connection.decoder)
 
 
-
--- Encode.list Node.encode nodes
-
-
 decodeStoredModel : Encode.Value -> PartialModel
 decodeStoredModel modelJson =
     case Decode.decodeValue modelDecoder modelJson of
@@ -287,6 +283,56 @@ select target node =
 deselect : Node -> Node
 deselect node =
     { node | selected = False }
+
+
+removeSelected : Model -> Model
+removeSelected model =
+    let
+        nodesToRemove =
+            filter (\n -> n.selected) model.nodes
+
+        nodes =
+            filter (\n -> not n.selected) model.nodes
+
+        connections =
+            filter (connectionHasNoNode nodesToRemove) model.connections
+    in
+    { model | nodes = nodes, connections = connections }
+
+
+connectionHasNoNode : List Node -> Connection -> Bool
+connectionHasNoNode nodes connection =
+    not (connectionHasAnyNode nodes connection)
+
+
+connectionHasAnyNode : List Node -> Connection -> Bool
+connectionHasAnyNode nodes connection =
+    any (connectionHasNode connection) nodes
+
+
+connectionHasNode : Connection -> Node -> Bool
+connectionHasNode connection node =
+    connection.input.id == node.id || connection.output.id == node.id
+
+
+nodeById : Model -> Int -> Maybe Node
+nodeById model id =
+    head (filter (\n -> n.id == id) model.nodes)
+
+
+connectionWouldBeValid : Model -> Connection -> Bool
+connectionWouldBeValid model connection =
+    let
+        inputExists =
+            any (\n -> n.id == connection.input.id) model.nodes
+
+        outputExists =
+            any (\n -> n.id == connection.output.id) model.nodes
+
+        wouldBeDuplicate =
+            any (\c -> c.input == connection.input && c.output == connection.output) model.connections
+    in
+    inputExists && outputExists && not wouldBeDuplicate
 
 
 drag : Vec2 -> Node -> Node
@@ -525,14 +571,14 @@ putsEl id socketType count =
         (map (\i -> putEl { id = id, index = i, socketType = socketType }) (range 0 (count - 1)))
 
 
-putEl : SocketRef -> Element Msg
-putEl socketRef =
+putEl : Socket -> Element Msg
+putEl socket =
     el
         [ width (px 20)
         , height (px 20)
         , Background.color (rgb 0.9 0.3 0.3)
-        , Events.onMouseDown (StartConnect socketRef)
-        , Events.onMouseUp (EndConnect socketRef)
+        , Events.onMouseDown (StartConnect socket)
+        , Events.onMouseUp (EndConnect socket)
         ]
         Element.none
 
@@ -585,17 +631,17 @@ socketTypeOffsetY socketType =
             87
 
 
-socketRefPos : Model -> SocketRef -> ( Float, Float )
-socketRefPos model socketRef =
+socketPos : Model -> Socket -> ( Float, Float )
+socketPos model socket =
     let
         node =
-            head (filter (\n -> n.id == socketRef.id) model.nodes)
+            head (filter (\n -> n.id == socket.id) model.nodes)
     in
     case node of
         Just justNode ->
             let
                 count =
-                    case socketRef.socketType of
+                    case socket.socketType of
                         Output ->
                             outputCount justNode
 
@@ -603,10 +649,10 @@ socketRefPos model socketRef =
                             inputCount justNode
 
                 offsetX =
-                    socketIndexOffsetX socketRef.index count
+                    socketIndexOffsetX socket.index count
 
                 offsetY =
-                    socketTypeOffsetY socketRef.socketType
+                    socketTypeOffsetY socket.socketType
             in
             ( justNode.pos.x + offsetX, justNode.pos.y + offsetY )
 
@@ -619,9 +665,9 @@ connectingLine model =
     if model.connecting then
         let
             a =
-                case model.connectingSocketRef of
-                    Just socketRef ->
-                        socketRefPos model socketRef
+                case model.connectingSocket of
+                    Just socket ->
+                        socketPos model socket
 
                     Nothing ->
                         ( 100, 0 )
@@ -637,7 +683,7 @@ connectingLine model =
 
 connectedLine : Model -> Connection -> Canvas.Renderable
 connectedLine model connection =
-    line (socketRefPos model connection.input) (socketRefPos model connection.output)
+    line (socketPos model connection.input) (socketPos model connection.output)
 
 
 connectedLines : Model -> List Canvas.Renderable

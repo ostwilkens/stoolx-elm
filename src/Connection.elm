@@ -1,4 +1,4 @@
-module Connection exposing (Connection, SocketRef, SocketType(..), decoder, encode)
+module Connection exposing (Connection, Socket, SocketType(..), decoder, encode)
 
 import Json.Decode as Decode exposing (Decoder, field, int, map, oneOf, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -6,8 +6,8 @@ import Json.Encode as Encode
 
 
 type alias Connection =
-    { input : SocketRef
-    , output : SocketRef
+    { input : Socket
+    , output : Socket
     }
 
 
@@ -16,7 +16,7 @@ type SocketType
     | Output
 
 
-type alias SocketRef =
+type alias Socket =
     { id : Int
     , index : Int
     , socketType : SocketType
@@ -26,32 +26,32 @@ type alias SocketRef =
 encode : Connection -> Encode.Value
 encode connection =
     Encode.object
-        [ ( "input", encodeSocketRef connection.input )
-        , ( "output", encodeSocketRef connection.output )
+        [ ( "input", encodeSocket connection.input )
+        , ( "output", encodeSocket connection.output )
         ]
 
 
 decoder : Decoder Connection
 decoder =
     Decode.succeed Connection
-        |> required "input" (socketRefDecoder Input)
-        |> required "output" (socketRefDecoder Output)
+        |> required "input" (socketDecoder Input)
+        |> required "output" (socketDecoder Output)
 
 
-socketRefDecoder : SocketType -> Decoder SocketRef
-socketRefDecoder socketType =
-    Decode.succeed SocketRef
+socketDecoder : SocketType -> Decoder Socket
+socketDecoder socketType =
+    Decode.succeed Socket
         |> required "id" int
         |> required "index" int
         |> required "socketType" (Decode.succeed socketType)
 
 
-encodeSocketRef : SocketRef -> Encode.Value
-encodeSocketRef socketRef =
+encodeSocket : Socket -> Encode.Value
+encodeSocket socket =
     Encode.object
-        [ ( "id", Encode.int socketRef.id )
-        , ( "index", Encode.int socketRef.index )
-        , ( "socketType", encodeSocketType socketRef.socketType )
+        [ ( "id", Encode.int socket.id )
+        , ( "index", Encode.int socket.index )
+        , ( "socketType", encodeSocketType socket.socketType )
         ]
 
 
