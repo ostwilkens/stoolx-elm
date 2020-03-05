@@ -6853,8 +6853,11 @@ var $author$project$Connection$Connection = F2(
 	function (input, output) {
 		return {input: input, output: output};
 	});
-var $author$project$Connection$Input = {$: 'Input'};
-var $author$project$Connection$Output = {$: 'Output'};
+var $author$project$Connection$Input = F2(
+	function (a, b) {
+		return {$: 'Input', a: a, b: b};
+	});
+var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$custom = $elm$json$Json$Decode$map2($elm$core$Basics$apR);
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
@@ -6864,34 +6867,36 @@ var $NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required = F3(
 			A2($elm$json$Json$Decode$field, key, valDecoder),
 			decoder);
 	});
-var $author$project$Connection$Socket = F3(
-	function (id, index, socketType) {
-		return {id: id, index: index, socketType: socketType};
-	});
-var $elm$json$Json$Decode$int = _Json_decodeInt;
-var $author$project$Connection$socketDecoder = function (socketType) {
-	return A3(
+var $author$project$Connection$inputDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'index',
+	$elm$json$Json$Decode$int,
+	A3(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-		'socketType',
-		$elm$json$Json$Decode$succeed(socketType),
-		A3(
-			$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-			'index',
-			$elm$json$Json$Decode$int,
-			A3(
-				$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
-				'id',
-				$elm$json$Json$Decode$int,
-				$elm$json$Json$Decode$succeed($author$project$Connection$Socket))));
-};
+		'id',
+		$elm$json$Json$Decode$int,
+		$elm$json$Json$Decode$succeed($author$project$Connection$Input)));
+var $author$project$Connection$Output = F2(
+	function (a, b) {
+		return {$: 'Output', a: a, b: b};
+	});
+var $author$project$Connection$outputDecoder = A3(
+	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+	'index',
+	$elm$json$Json$Decode$int,
+	A3(
+		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
+		'id',
+		$elm$json$Json$Decode$int,
+		$elm$json$Json$Decode$succeed($author$project$Connection$Output)));
 var $author$project$Connection$decoder = A3(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 	'output',
-	$author$project$Connection$socketDecoder($author$project$Connection$Output),
+	$author$project$Connection$outputDecoder,
 	A3(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 		'input',
-		$author$project$Connection$socketDecoder($author$project$Connection$Input),
+		$author$project$Connection$inputDecoder,
 		$elm$json$Json$Decode$succeed($author$project$Connection$Connection)));
 var $author$project$Node$Node = F4(
 	function (pos, selected, code, id) {
@@ -7539,11 +7544,93 @@ var $author$project$Main$subscriptions = function (_v0) {
 					}))
 			]));
 };
-var $author$project$Main$connectSockets = F2(
-	function (a, b) {
-		var output = _Utils_eq(a.socketType, $author$project$Connection$Output) ? a : b;
-		var input = _Utils_eq(a.socketType, $author$project$Connection$Input) ? a : b;
-		var valid = _Utils_eq(input.socketType, $author$project$Connection$Input) && _Utils_eq(output.socketType, $author$project$Connection$Output);
+var $elm$core$List$any = F2(
+	function (isOkay, list) {
+		any:
+		while (true) {
+			if (!list.b) {
+				return false;
+			} else {
+				var x = list.a;
+				var xs = list.b;
+				if (isOkay(x)) {
+					return true;
+				} else {
+					var $temp$isOkay = isOkay,
+						$temp$list = xs;
+					isOkay = $temp$isOkay;
+					list = $temp$list;
+					continue any;
+				}
+			}
+		}
+	});
+var $author$project$Connection$getId = function (socket) {
+	if (socket.$ === 'Input') {
+		var id = socket.a;
+		return id;
+	} else {
+		var id = socket.a;
+		return id;
+	}
+};
+var $elm$core$Basics$not = _Basics_not;
+var $author$project$Main$connectSockets = F3(
+	function (model, a, b) {
+		var output = function () {
+			if (a.$ === 'Output') {
+				return a;
+			} else {
+				return b;
+			}
+		}();
+		var outputExists = A2(
+			$elm$core$List$any,
+			function (n) {
+				return _Utils_eq(
+					n.id,
+					$author$project$Connection$getId(output));
+			},
+			model.nodes);
+		var outputIsOutput = function () {
+			if (output.$ === 'Output') {
+				return true;
+			} else {
+				return false;
+			}
+		}();
+		var input = function () {
+			if (a.$ === 'Input') {
+				return a;
+			} else {
+				return b;
+			}
+		}();
+		var inputExists = A2(
+			$elm$core$List$any,
+			function (n) {
+				return _Utils_eq(
+					n.id,
+					$author$project$Connection$getId(input));
+			},
+			model.nodes);
+		var inputIsInput = function () {
+			if (input.$ === 'Input') {
+				return true;
+			} else {
+				return false;
+			}
+		}();
+		var selfReference = _Utils_eq(
+			$author$project$Connection$getId(input),
+			$author$project$Connection$getId(output));
+		var wouldBeDuplicate = A2(
+			$elm$core$List$any,
+			function (c) {
+				return _Utils_eq(c.input, input) && _Utils_eq(c.output, output);
+			},
+			model.connections);
+		var valid = inputExists && (inputIsInput && (outputExists && (outputIsOutput && ((!wouldBeDuplicate) && (!selfReference)))));
 		return valid ? $elm$core$Maybe$Just(
 			{input: input, output: output}) : $elm$core$Maybe$Nothing;
 	});
@@ -7563,17 +7650,6 @@ var $author$project$Main$drag = F2(
 			{
 				pos: A2($author$project$Vec2$add, node.pos, offset)
 			}) : node;
-	});
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
 	});
 var $author$project$Node$init = function (id) {
 	return {
@@ -7624,31 +7700,34 @@ var $author$project$Main$nextId = function (model) {
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$core$Basics$not = _Basics_not;
-var $elm$core$List$any = F2(
-	function (isOkay, list) {
-		any:
-		while (true) {
-			if (!list.b) {
-				return false;
-			} else {
-				var x = list.a;
-				var xs = list.b;
-				if (isOkay(x)) {
-					return true;
-				} else {
-					var $temp$isOkay = isOkay,
-						$temp$list = xs;
-					isOkay = $temp$isOkay;
-					list = $temp$list;
-					continue any;
-				}
-			}
-		}
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
+var $elm$core$Basics$neq = _Utils_notEqual;
+var $author$project$Main$removePreviousConnection = F2(
+	function (connections, newConnection) {
+		return A2(
+			$elm$core$List$filter,
+			function (c) {
+				return !_Utils_eq(c.input, newConnection.input);
+			},
+			connections);
 	});
 var $author$project$Main$connectionHasNode = F2(
 	function (connection, node) {
-		return _Utils_eq(connection.input.id, node.id) || _Utils_eq(connection.output.id, node.id);
+		return _Utils_eq(
+			$author$project$Connection$getId(connection.input),
+			node.id) || _Utils_eq(
+			$author$project$Connection$getId(connection.output),
+			node.id);
 	});
 var $author$project$Main$connectionHasAnyNode = F2(
 	function (nodes, connection) {
@@ -7682,14 +7761,6 @@ var $author$project$Main$removeSelected = function (model) {
 		model,
 		{connections: connections, nodes: nodes});
 };
-var $elm$json$Json$Encode$string = _Json_wrap;
-var $author$project$Connection$encodeSocketType = function (socketType) {
-	if (socketType.$ === 'Input') {
-		return $elm$json$Json$Encode$string('Input');
-	} else {
-		return $elm$json$Json$Encode$string('Output');
-	}
-};
 var $elm$json$Json$Encode$int = _Json_wrap;
 var $elm$json$Json$Encode$object = function (pairs) {
 	return _Json_wrap(
@@ -7705,19 +7776,33 @@ var $elm$json$Json$Encode$object = function (pairs) {
 			pairs));
 };
 var $author$project$Connection$encodeSocket = function (socket) {
-	return $elm$json$Json$Encode$object(
-		_List_fromArray(
-			[
-				_Utils_Tuple2(
-				'id',
-				$elm$json$Json$Encode$int(socket.id)),
-				_Utils_Tuple2(
-				'index',
-				$elm$json$Json$Encode$int(socket.index)),
-				_Utils_Tuple2(
-				'socketType',
-				$author$project$Connection$encodeSocketType(socket.socketType))
-			]));
+	if (socket.$ === 'Input') {
+		var id = socket.a;
+		var index = socket.b;
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'id',
+					$elm$json$Json$Encode$int(id)),
+					_Utils_Tuple2(
+					'index',
+					$elm$json$Json$Encode$int(index))
+				]));
+	} else {
+		var id = socket.a;
+		var index = socket.b;
+		return $elm$json$Json$Encode$object(
+			_List_fromArray(
+				[
+					_Utils_Tuple2(
+					'id',
+					$elm$json$Json$Encode$int(id)),
+					_Utils_Tuple2(
+					'index',
+					$elm$json$Json$Encode$int(index))
+				]));
+	}
 };
 var $author$project$Connection$encode = function (connection) {
 	return $elm$json$Json$Encode$object(
@@ -7744,6 +7829,7 @@ var $author$project$Vec2$encode = function (vec2) {
 				$elm$json$Json$Encode$float(vec2.y))
 			]));
 };
+var $elm$json$Json$Encode$string = _Json_wrap;
 var $author$project$Node$encode = function (node) {
 	return $elm$json$Json$Encode$object(
 		_List_fromArray(
@@ -7793,14 +7879,11 @@ var $author$project$Main$select = F2(
 				selected: _Utils_eq(node, target)
 			});
 	});
-var $author$project$Node$selected = function (node) {
-	return node.selected;
-};
 var $author$project$Node$setCode = F2(
 	function (code, node) {
-		return _Utils_update(
+		return node.selected ? _Utils_update(
 			node,
-			{code: code});
+			{code: code}) : node;
 	});
 var $author$project$Vec2$sub = F2(
 	function (a, b) {
@@ -7888,7 +7971,7 @@ var $author$project$Main$update = F2(
 							nodes: A2(
 								$elm$core$List$map,
 								$author$project$Node$setCode(code),
-								A2($elm$core$List$filter, $author$project$Node$selected, model.nodes))
+								model.nodes)
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'UpdateTime':
@@ -7932,14 +8015,17 @@ var $author$project$Main$update = F2(
 				var _v2 = model.connectingSocket;
 				if (_v2.$ === 'Just') {
 					var otherSocket = _v2.a;
-					var connection = A2($author$project$Main$connectSockets, socket, otherSocket);
+					var connection = A3($author$project$Main$connectSockets, model, socket, otherSocket);
 					if (connection.$ === 'Just') {
 						var justConnection = connection.a;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
 								{
-									connections: A2($elm$core$List$cons, justConnection, model.connections)
+									connections: A2(
+										$elm$core$List$cons,
+										justConnection,
+										A2($author$project$Main$removePreviousConnection, model.connections, justConnection))
 								}),
 							$elm$core$Platform$Cmd$none);
 					} else {
@@ -8199,6 +8285,15 @@ var $author$project$Main$line = F2(
 						]))
 				]));
 	});
+var $author$project$Connection$getIndex = function (socket) {
+	if (socket.$ === 'Input') {
+		var index = socket.b;
+		return index;
+	} else {
+		var index = socket.b;
+		return index;
+	}
+};
 var $elm$core$List$head = function (list) {
 	if (list.b) {
 		var x = list.a;
@@ -8238,11 +8333,11 @@ var $author$project$Main$socketIndexOffsetX = F2(
 	function (index, count) {
 		return ((50 + 15) + (index * 30)) - (count * 15);
 	});
-var $author$project$Main$socketTypeOffsetY = function (socketType) {
-	if (socketType.$ === 'Output') {
-		return 13;
-	} else {
+var $author$project$Main$socketTypeOffsetY = function (socket) {
+	if (socket.$ === 'Input') {
 		return 87;
+	} else {
+		return 13;
 	}
 };
 var $author$project$Main$socketPos = F2(
@@ -8251,21 +8346,25 @@ var $author$project$Main$socketPos = F2(
 			A2(
 				$elm$core$List$filter,
 				function (n) {
-					return _Utils_eq(n.id, socket.id);
+					return _Utils_eq(
+						n.id,
+						$author$project$Connection$getId(socket));
 				},
 				model.nodes));
 		if (node.$ === 'Just') {
 			var justNode = node.a;
-			var offsetY = $author$project$Main$socketTypeOffsetY(socket.socketType);
+			var offsetY = $author$project$Main$socketTypeOffsetY(socket);
 			var count = function () {
-				var _v1 = socket.socketType;
-				if (_v1.$ === 'Output') {
+				if (socket.$ === 'Output') {
 					return $author$project$Node$outputCount(justNode);
 				} else {
 					return $author$project$Node$inputCount(justNode);
 				}
 			}();
-			var offsetX = A2($author$project$Main$socketIndexOffsetX, socket.index, count);
+			var offsetX = A2(
+				$author$project$Main$socketIndexOffsetX,
+				$author$project$Connection$getIndex(socket),
+				count);
 			return _Utils_Tuple2(justNode.pos.x + offsetX, justNode.pos.y + offsetY);
 		} else {
 			return _Utils_Tuple2(0, 0);
@@ -12469,7 +12568,6 @@ var $elm$core$List$minimum = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
-var $elm$core$Basics$neq = _Utils_notEqual;
 var $mdgriffith$elm_ui$Internal$Model$convertAdjustment = function (adjustment) {
 	var lines = _List_fromArray(
 		[adjustment.capital, adjustment.baseline, adjustment.descender, adjustment.lowercase]);
@@ -16009,27 +16107,11 @@ var $mdgriffith$elm_ui$Element$column = F2(
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
 var $author$project$Main$gray = A3($mdgriffith$elm_ui$Element$rgb, 0.3, 0.3, 0.3);
-var $mdgriffith$elm_ui$Element$moveDown = function (y) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$TransformComponent,
-		$mdgriffith$elm_ui$Internal$Flag$moveY,
-		$mdgriffith$elm_ui$Internal$Model$MoveY(y));
+var $author$project$Main$Connect = function (a) {
+	return {$: 'Connect', a: a};
 };
-var $mdgriffith$elm_ui$Internal$Model$MoveX = function (a) {
-	return {$: 'MoveX', a: a};
-};
-var $mdgriffith$elm_ui$Internal$Flag$moveX = $mdgriffith$elm_ui$Internal$Flag$flag(25);
-var $mdgriffith$elm_ui$Element$moveRight = function (x) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$TransformComponent,
-		$mdgriffith$elm_ui$Internal$Flag$moveX,
-		$mdgriffith$elm_ui$Internal$Model$MoveX(x));
-};
-var $author$project$Main$nodeBorderColor = function (node) {
-	return node.selected ? $mdgriffith$elm_ui$Element$Border$color($author$project$Main$red) : $mdgriffith$elm_ui$Element$Border$color($author$project$Main$black);
-};
-var $author$project$Main$nodeBorderWidth = function (node) {
-	return node.selected ? $mdgriffith$elm_ui$Element$Border$width(3) : $mdgriffith$elm_ui$Element$Border$width(1);
+var $author$project$Main$StartConnect = function (a) {
+	return {$: 'StartConnect', a: a};
 };
 var $elm$html$Html$Events$onMouseDown = function (msg) {
 	return A2(
@@ -16038,14 +16120,6 @@ var $elm$html$Html$Events$onMouseDown = function (msg) {
 		$elm$json$Json$Decode$succeed(msg));
 };
 var $mdgriffith$elm_ui$Element$Events$onMouseDown = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseDown);
-var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
-var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
-var $author$project$Main$Connect = function (a) {
-	return {$: 'Connect', a: a};
-};
-var $author$project$Main$StartConnect = function (a) {
-	return {$: 'StartConnect', a: a};
-};
 var $elm$html$Html$Events$onMouseUp = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
@@ -16071,14 +16145,13 @@ var $author$project$Main$putEl = function (socket) {
 			]),
 		$mdgriffith$elm_ui$Element$none);
 };
-var $author$project$Main$putsEl = F3(
-	function (id, socketType, count) {
-		var alignment = _Utils_eq(socketType, $author$project$Connection$Output) ? $mdgriffith$elm_ui$Element$alignTop : $mdgriffith$elm_ui$Element$alignBottom;
+var $author$project$Main$inputsEl = F2(
+	function (id, count) {
 		return A2(
 			$mdgriffith$elm_ui$Element$row,
 			_List_fromArray(
 				[
-					alignment,
+					$mdgriffith$elm_ui$Element$alignBottom,
 					$mdgriffith$elm_ui$Element$spacing(10),
 					$mdgriffith$elm_ui$Element$centerX
 				]),
@@ -16086,7 +16159,49 @@ var $author$project$Main$putsEl = F3(
 				$elm$core$List$map,
 				function (i) {
 					return $author$project$Main$putEl(
-						{id: id, index: i, socketType: socketType});
+						A2($author$project$Connection$Input, id, i));
+				},
+				A2($elm$core$List$range, 0, count - 1)));
+	});
+var $mdgriffith$elm_ui$Element$moveDown = function (y) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$TransformComponent,
+		$mdgriffith$elm_ui$Internal$Flag$moveY,
+		$mdgriffith$elm_ui$Internal$Model$MoveY(y));
+};
+var $mdgriffith$elm_ui$Internal$Model$MoveX = function (a) {
+	return {$: 'MoveX', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Flag$moveX = $mdgriffith$elm_ui$Internal$Flag$flag(25);
+var $mdgriffith$elm_ui$Element$moveRight = function (x) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$TransformComponent,
+		$mdgriffith$elm_ui$Internal$Flag$moveX,
+		$mdgriffith$elm_ui$Internal$Model$MoveX(x));
+};
+var $author$project$Main$nodeBorderColor = function (node) {
+	return node.selected ? $mdgriffith$elm_ui$Element$Border$color($author$project$Main$red) : $mdgriffith$elm_ui$Element$Border$color($author$project$Main$black);
+};
+var $author$project$Main$nodeBorderWidth = function (node) {
+	return node.selected ? $mdgriffith$elm_ui$Element$Border$width(3) : $mdgriffith$elm_ui$Element$Border$width(1);
+};
+var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
+var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
+var $author$project$Main$outputsEl = F2(
+	function (id, count) {
+		return A2(
+			$mdgriffith$elm_ui$Element$row,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$alignTop,
+					$mdgriffith$elm_ui$Element$spacing(10),
+					$mdgriffith$elm_ui$Element$centerX
+				]),
+			A2(
+				$elm$core$List$map,
+				function (i) {
+					return $author$project$Main$putEl(
+						A2($author$project$Connection$Output, id, i));
 				},
 				A2($elm$core$List$range, 0, count - 1)));
 	});
@@ -16116,16 +16231,14 @@ var $author$project$Main$nodeEl = function (node) {
 				]),
 			_List_fromArray(
 				[
-					A3(
-					$author$project$Main$putsEl,
+					A2(
+					$author$project$Main$outputsEl,
 					node.id,
-					$author$project$Connection$Output,
 					$author$project$Node$outputCount(node)),
 					$author$project$Main$codePreviewEl(node),
-					A3(
-					$author$project$Main$putsEl,
+					A2(
+					$author$project$Main$inputsEl,
 					node.id,
-					$author$project$Connection$Input,
 					$author$project$Node$inputCount(node))
 				])));
 };

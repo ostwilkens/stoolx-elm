@@ -7,7 +7,7 @@ import Canvas
 import Canvas.Settings
 import Canvas.Settings.Line
 import Color
-import Connection exposing (Connection, Socket, SocketType(..), decoder)
+import Connection exposing (Connection, Socket(..), decoder, getId, getIndex)
 import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, paddingXY, px, rgb, rgba, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -184,7 +184,7 @@ update msg model =
             )
 
         SetCode code ->
-            ( { model | nodes = map (setCode code) (filter selected model.nodes) }
+            ( { model | nodes = map (setCode code) model.nodes }
             , Cmd.none
             )
 
@@ -213,11 +213,11 @@ update msg model =
                 Just otherSocket ->
                     let
                         connection =
-                            connectSockets socket otherSocket
+                            connectSockets model socket otherSocket
                     in
                     case connection of
                         Just justConnection ->
-                            ( { model | connections = justConnection :: model.connections }
+                            ( { model | connections = justConnection :: removePreviousConnection model.connections justConnection }
                             , Cmd.none
                             )
 
@@ -228,31 +228,9 @@ update msg model =
                     ( model, Cmd.none )
 
 
-connectSockets : Socket -> Socket -> Maybe Connection
-connectSockets a b =
-    let
-        input =
-            if a.socketType == Input then
-                a
-
-            else
-                b
-
-        output =
-            if a.socketType == Output then
-                a
-
-            else
-                b
-
-        valid =
-            input.socketType == Input && output.socketType == Output
-    in
-    if valid then
-        Just { input = input, output = output }
-
-    else
-        Nothing
+removePreviousConnection : List Connection -> Connection -> List Connection
+removePreviousConnection connections newConnection =
+    filter (\c -> c.input /= newConnection.input) connections
 
 
 saveModel : Model -> Cmd msg
@@ -333,7 +311,7 @@ connectionHasAnyNode nodes connection =
 
 connectionHasNode : Connection -> Node -> Bool
 connectionHasNode connection node =
-    connection.input.id == node.id || connection.output.id == node.id
+    getId connection.input == node.id || getId connection.output == node.id
 
 
 nodeById : Model -> Int -> Maybe Node
@@ -341,19 +319,66 @@ nodeById model id =
     head (filter (\n -> n.id == id) model.nodes)
 
 
-connectionWouldBeValid : Model -> Connection -> Bool
-connectionWouldBeValid model connection =
+connectSockets : Model -> Socket -> Socket -> Maybe Connection
+connectSockets model a b =
     let
+        input =
+            case a of
+                Input _ _ ->
+                    a
+
+                Output _ _ ->
+                    b
+
+        output =
+            case a of
+                Output _ _ ->
+                    a
+
+                Input _ _ ->
+                    b
+
         inputExists =
-            any (\n -> n.id == connection.input.id) model.nodes
+            any (\n -> n.id == getId input) model.nodes
+
+        inputIsInput =
+            case input of
+                Input _ _ ->
+                    True
+
+                Output _ _ ->
+                    False
 
         outputExists =
-            any (\n -> n.id == connection.output.id) model.nodes
+            any (\n -> n.id == getId output) model.nodes
+
+        outputIsOutput =
+            case output of
+                Output _ _ ->
+                    True
+
+                Input _ _ ->
+                    False
 
         wouldBeDuplicate =
-            any (\c -> c.input == connection.input && c.output == connection.output) model.connections
+            any (\c -> c.input == input && c.output == output) model.connections
+
+        selfReference =
+            getId input == getId output
+
+        valid =
+            inputExists
+                && inputIsInput
+                && outputExists
+                && outputIsOutput
+                && not wouldBeDuplicate
+                && not selfReference
     in
-    inputExists && outputExists && not wouldBeDuplicate
+    if valid then
+        Just { input = input, output = output }
+
+    else
+        Nothing
 
 
 drag : Vec2 -> Node -> Node
@@ -571,25 +596,23 @@ nodeEl node =
             , Events.onMouseDown (Select node)
             , Font.size 10
             ]
-            [ putsEl node.id Output (outputCount node)
+            [ outputsEl node.id (outputCount node)
             , codePreviewEl node
-            , putsEl node.id Input (inputCount node)
+            , inputsEl node.id (inputCount node)
             ]
         )
 
 
-putsEl : Int -> SocketType -> Int -> Element Msg
-putsEl id socketType count =
-    let
-        alignment =
-            if socketType == Output then
-                alignTop
+inputsEl : Int -> Int -> Element Msg
+inputsEl id count =
+    row [ alignBottom, spacing 10, centerX ]
+        (map (\i -> putEl (Input id i)) (range 0 (count - 1)))
 
-            else
-                alignBottom
-    in
-    row [ alignment, spacing 10, centerX ]
-        (map (\i -> putEl { id = id, index = i, socketType = socketType }) (range 0 (count - 1)))
+
+outputsEl : Int -> Int -> Element Msg
+outputsEl id count =
+    row [ alignTop, spacing 10, centerX ]
+        (map (\i -> putEl (Output id i)) (range 0 (count - 1)))
 
 
 putEl : Socket -> Element Msg
@@ -642,38 +665,38 @@ socketIndexOffsetX index count =
     toFloat (50 + 15 + index * 30 - count * 15)
 
 
-socketTypeOffsetY : SocketType -> Float
-socketTypeOffsetY socketType =
-    case socketType of
-        Output ->
-            13
-
-        Input ->
+socketTypeOffsetY : Socket -> Float
+socketTypeOffsetY socket =
+    case socket of
+        Input _ _ ->
             87
+
+        Output _ _ ->
+            13
 
 
 socketPos : Model -> Socket -> ( Float, Float )
 socketPos model socket =
     let
         node =
-            head (filter (\n -> n.id == socket.id) model.nodes)
+            head (filter (\n -> n.id == getId socket) model.nodes)
     in
     case node of
         Just justNode ->
             let
                 count =
-                    case socket.socketType of
-                        Output ->
+                    case socket of
+                        Output _ _ ->
                             outputCount justNode
 
-                        Input ->
+                        Input _ _ ->
                             inputCount justNode
 
                 offsetX =
-                    socketIndexOffsetX socket.index count
+                    socketIndexOffsetX (getIndex socket) count
 
                 offsetY =
-                    socketTypeOffsetY socket.socketType
+                    socketTypeOffsetY socket
             in
             ( justNode.pos.x + offsetX, justNode.pos.y + offsetY )
 

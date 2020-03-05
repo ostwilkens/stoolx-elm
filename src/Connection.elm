@@ -1,4 +1,4 @@
-module Connection exposing (Connection, Socket, SocketType(..), decoder, encode)
+module Connection exposing (Connection, Socket(..), decoder, encode, getId, getIndex)
 
 import Json.Decode as Decode exposing (Decoder, int, string)
 import Json.Decode.Pipeline exposing (required)
@@ -11,16 +11,29 @@ type alias Connection =
     }
 
 
-type SocketType
-    = Input
-    | Output
+type Socket
+    = Input Int Int
+    | Output Int Int
 
 
-type alias Socket =
-    { id : Int
-    , index : Int
-    , socketType : SocketType
-    }
+getId : Socket -> Int
+getId socket =
+    case socket of
+        Input id _ ->
+            id
+
+        Output id _ ->
+            id
+
+
+getIndex : Socket -> Int
+getIndex socket =
+    case socket of
+        Input _ index ->
+            index
+
+        Output _ index ->
+            index
 
 
 encode : Connection -> Encode.Value
@@ -31,35 +44,38 @@ encode connection =
         ]
 
 
+encodeSocket : Socket -> Encode.Value
+encodeSocket socket =
+    case socket of
+        Input id index ->
+            Encode.object
+                [ ( "id", Encode.int id )
+                , ( "index", Encode.int index )
+                ]
+
+        Output id index ->
+            Encode.object
+                [ ( "id", Encode.int id )
+                , ( "index", Encode.int index )
+                ]
+
+
 decoder : Decoder Connection
 decoder =
     Decode.succeed Connection
-        |> required "input" (socketDecoder Input)
-        |> required "output" (socketDecoder Output)
+        |> required "input" inputDecoder
+        |> required "output" outputDecoder
 
 
-socketDecoder : SocketType -> Decoder Socket
-socketDecoder socketType =
-    Decode.succeed Socket
+inputDecoder : Decoder Socket
+inputDecoder =
+    Decode.succeed Input
         |> required "id" int
         |> required "index" int
-        |> required "socketType" (Decode.succeed socketType)
 
 
-encodeSocket : Socket -> Encode.Value
-encodeSocket socket =
-    Encode.object
-        [ ( "id", Encode.int socket.id )
-        , ( "index", Encode.int socket.index )
-        , ( "socketType", encodeSocketType socket.socketType )
-        ]
-
-
-encodeSocketType : SocketType -> Encode.Value
-encodeSocketType socketType =
-    case socketType of
-        Input ->
-            Encode.string "Input"
-
-        Output ->
-            Encode.string "Output"
+outputDecoder : Decoder Socket
+outputDecoder =
+    Decode.succeed Output
+        |> required "id" int
+        |> required "index" int

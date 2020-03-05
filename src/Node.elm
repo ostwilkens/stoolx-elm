@@ -41,7 +41,11 @@ selected node =
 
 setCode : String -> Node -> Node
 setCode code node =
-    { node | code = code }
+    if node.selected then
+        { node | code = code }
+
+    else
+        node
 
 
 returnType : Node -> Maybe String
