@@ -31,14 +31,23 @@ import WebGL
 
 type alias Model =
     { nodes : List Node
+    , connections : List Connection
     , dragging : Bool
     , lastCursorPos : Vec2
     , time : Float
-    , connecting : Bool
-    , size : ( Float, Float )
+    , windowSize : ( Float, Float )
     , connectingSocket : Maybe Socket
-    , connections : List Connection
     }
+
+
+connecting : Model -> Bool
+connecting model =
+    case model.connectingSocket of
+        Just _ ->
+            True
+
+        Nothing ->
+            False
 
 
 type alias PartialModel =
@@ -62,12 +71,11 @@ init flags =
       , dragging = False
       , lastCursorPos = Vec2 0 0
       , time = 0
-      , connecting = False
-      , size = ( 0, 0 )
+      , windowSize = ( 0, 0 )
       , connectingSocket = Nothing
       , connections = partialModel.connections
       }
-    , Task.perform InitSize Browser.Dom.getViewport
+    , Task.perform InitWindowSize Browser.Dom.getViewport
     )
 
 
@@ -101,7 +109,7 @@ type Msg
     | UpdateTime Float
     | StartConnect Socket
     | Resize ( Float, Float )
-    | InitSize Browser.Dom.Viewport
+    | InitWindowSize Browser.Dom.Viewport
     | EndConnect Socket
 
 
@@ -116,7 +124,7 @@ update msg model =
         Select node ->
             let
                 startDragging =
-                    not model.connecting
+                    not (connecting model)
             in
             ( { model | nodes = map (select node) model.nodes, dragging = startDragging }
             , Cmd.none
@@ -128,7 +136,7 @@ update msg model =
             )
 
         Release ->
-            ( { model | dragging = False, connecting = False }
+            ( { model | dragging = False, connectingSocket = Nothing }
             , Cmd.none
             )
 
@@ -173,17 +181,17 @@ update msg model =
             )
 
         StartConnect socket ->
-            ( { model | connecting = True, connectingSocket = Just socket }
+            ( { model | connectingSocket = Just socket }
             , Cmd.none
             )
 
-        Resize ( w, h ) ->
-            ( { model | size = ( w, h ) }
+        Resize ( width, height ) ->
+            ( { model | windowSize = ( width, height ) }
             , Cmd.none
             )
 
-        InitSize viewport ->
-            ( { model | size = ( viewport.viewport.width, viewport.viewport.height ) }
+        InitWindowSize viewport ->
+            ( { model | windowSize = ( viewport.viewport.width, viewport.viewport.height ) }
             , Cmd.none
             )
 
@@ -599,10 +607,10 @@ canvasEl : Model -> Element Msg
 canvasEl model =
     let
         width =
-            Tuple.first model.size
+            Tuple.first model.windowSize
 
         height =
-            Tuple.second model.size
+            Tuple.second model.windowSize
     in
     Element.html
         (Canvas.toHtml ( floor width, floor height )
@@ -662,7 +670,7 @@ socketPos model socket =
 
 connectingLine : Model -> Canvas.Renderable
 connectingLine model =
-    if model.connecting then
+    if connecting model then
         let
             a =
                 case model.connectingSocket of

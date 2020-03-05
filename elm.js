@@ -6837,8 +6837,8 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$element = _Browser_element;
-var $author$project$Main$InitSize = function (a) {
-	return {$: 'InitSize', a: a};
+var $author$project$Main$InitWindowSize = function (a) {
+	return {$: 'InitWindowSize', a: a};
 };
 var $author$project$Vec2$Vec2 = F2(
 	function (x, y) {
@@ -6961,16 +6961,15 @@ var $author$project$Main$init = function (flags) {
 	}();
 	return _Utils_Tuple2(
 		{
-			connecting: false,
 			connectingSocket: $elm$core$Maybe$Nothing,
 			connections: partialModel.connections,
 			dragging: false,
 			lastCursorPos: A2($author$project$Vec2$Vec2, 0, 0),
 			nodes: partialModel.nodes,
-			size: _Utils_Tuple2(0, 0),
-			time: 0
+			time: 0,
+			windowSize: _Utils_Tuple2(0, 0)
 		},
-		A2($elm$core$Task$perform, $author$project$Main$InitSize, $elm$browser$Browser$Dom$getViewport));
+		A2($elm$core$Task$perform, $author$project$Main$InitWindowSize, $elm$browser$Browser$Dom$getViewport));
 };
 var $elm$json$Json$Decode$null = _Json_decodeNull;
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
@@ -7548,6 +7547,14 @@ var $author$project$Main$connectSockets = F2(
 		return valid ? $elm$core$Maybe$Just(
 			{input: input, output: output}) : $elm$core$Maybe$Nothing;
 	});
+var $author$project$Main$connecting = function (model) {
+	var _v0 = model.connectingSocket;
+	if (_v0.$ === 'Just') {
+		return true;
+	} else {
+		return false;
+	}
+};
 var $author$project$Main$deselect = function (node) {
 	return _Utils_update(
 		node,
@@ -7801,7 +7808,7 @@ var $author$project$Main$update = F2(
 		switch (msg.$) {
 			case 'Select':
 				var node = msg.a;
-				var startDragging = !model.connecting;
+				var startDragging = !$author$project$Main$connecting(model);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -7825,7 +7832,7 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{connecting: false, dragging: false}),
+						{connectingSocket: $elm$core$Maybe$Nothing, dragging: false}),
 					$elm$core$Platform$Cmd$none);
 			case 'Drag':
 				var pos = msg.a;
@@ -7890,28 +7897,27 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{
-							connecting: true,
 							connectingSocket: $elm$core$Maybe$Just(socket)
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'Resize':
 				var _v1 = msg.a;
-				var w = _v1.a;
-				var h = _v1.b;
+				var width = _v1.a;
+				var height = _v1.b;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
-							size: _Utils_Tuple2(w, h)
+							windowSize: _Utils_Tuple2(width, height)
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'InitSize':
+			case 'InitWindowSize':
 				var viewport = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
-							size: _Utils_Tuple2(viewport.viewport.width, viewport.viewport.height)
+							windowSize: _Utils_Tuple2(viewport.viewport.width, viewport.viewport.height)
 						}),
 					$elm$core$Platform$Cmd$none);
 			default:
@@ -8272,7 +8278,7 @@ var $author$project$Main$connectedLines = function (model) {
 		model.connections);
 };
 var $author$project$Main$connectingLine = function (model) {
-	if (model.connecting) {
+	if ($author$project$Main$connecting(model)) {
 		var b = _Utils_Tuple2(model.lastCursorPos.x, model.lastCursorPos.y);
 		var a = function () {
 			var _v0 = model.connectingSocket;
@@ -9027,8 +9033,8 @@ var $joakin$elm_canvas$Canvas$toHtml = F3(
 			entities);
 	});
 var $author$project$Main$canvasEl = function (model) {
-	var width = model.size.a;
-	var height = model.size.b;
+	var width = model.windowSize.a;
+	var height = model.windowSize.b;
 	return $mdgriffith$elm_ui$Element$html(
 		A3(
 			$joakin$elm_canvas$Canvas$toHtml,
