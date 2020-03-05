@@ -1,7 +1,7 @@
 module Connection exposing (Connection, Socket, SocketType(..), decoder, encode)
 
-import Json.Decode as Decode exposing (Decoder, field, int, map, oneOf, string)
-import Json.Decode.Pipeline exposing (hardcoded, required)
+import Json.Decode as Decode exposing (Decoder, int, string)
+import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 
 

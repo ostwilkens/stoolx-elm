@@ -6845,7 +6845,7 @@ var $author$project$Vec2$Vec2 = F2(
 		return {x: x, y: y};
 	});
 var $elm$json$Json$Decode$decodeValue = _Json_run;
-var $author$project$Main$PartialModel = F2(
+var $author$project$Main$SavedModel = F2(
 	function (nodes, connections) {
 		return {connections: connections, nodes: nodes};
 	});
@@ -6939,19 +6939,19 @@ var $author$project$Main$modelDecoder = A3(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 		'nodes',
 		$elm$json$Json$Decode$list($author$project$Node$decoder),
-		$elm$json$Json$Decode$succeed($author$project$Main$PartialModel)));
+		$elm$json$Json$Decode$succeed($author$project$Main$SavedModel)));
 var $author$project$Main$decodeStoredModel = function (modelJson) {
 	var _v0 = A2($elm$json$Json$Decode$decodeValue, $author$project$Main$modelDecoder, modelJson);
 	if (_v0.$ === 'Ok') {
-		var partialModel = _v0.a;
-		return partialModel;
+		var savedModel = _v0.a;
+		return savedModel;
 	} else {
 		return {connections: _List_Nil, nodes: _List_Nil};
 	}
 };
 var $elm$browser$Browser$Dom$getViewport = _Browser_withWindow(_Browser_getViewport);
 var $author$project$Main$init = function (flags) {
-	var partialModel = function () {
+	var savedModel = function () {
 		if (flags.$ === 'Just') {
 			var modelJson = flags.a;
 			return $author$project$Main$decodeStoredModel(modelJson);
@@ -6962,10 +6962,10 @@ var $author$project$Main$init = function (flags) {
 	return _Utils_Tuple2(
 		{
 			connectingSocket: $elm$core$Maybe$Nothing,
-			connections: partialModel.connections,
+			connections: savedModel.connections,
 			dragging: false,
 			lastCursorPos: A2($author$project$Vec2$Vec2, 0, 0),
-			nodes: partialModel.nodes,
+			nodes: savedModel.nodes,
 			time: 0,
 			windowSize: _Utils_Tuple2(0, 0)
 		},
@@ -6973,8 +6973,8 @@ var $author$project$Main$init = function (flags) {
 };
 var $elm$json$Json$Decode$null = _Json_decodeNull;
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
-var $author$project$Main$Resize = function (a) {
-	return {$: 'Resize', a: a};
+var $author$project$Main$ResizeWindow = function (a) {
+	return {$: 'ResizeWindow', a: a};
 };
 var $author$project$Main$UpdateTime = function (a) {
 	return {$: 'UpdateTime', a: a};
@@ -7534,7 +7534,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 				$elm$browser$Browser$Events$onResize(
 				F2(
 					function (w, h) {
-						return $author$project$Main$Resize(
+						return $author$project$Main$ResizeWindow(
 							_Utils_Tuple2(w, h));
 					}))
 			]));
@@ -7547,14 +7547,6 @@ var $author$project$Main$connectSockets = F2(
 		return valid ? $elm$core$Maybe$Just(
 			{input: input, output: output}) : $elm$core$Maybe$Nothing;
 	});
-var $author$project$Main$connecting = function (model) {
-	var _v0 = model.connectingSocket;
-	if (_v0.$ === 'Just') {
-		return true;
-	} else {
-		return false;
-	}
-};
 var $author$project$Main$deselect = function (node) {
 	return _Utils_update(
 		node,
@@ -7572,6 +7564,17 @@ var $author$project$Main$drag = F2(
 				pos: A2($author$project$Vec2$add, node.pos, offset)
 			}) : node;
 	});
+var $elm$core$List$filter = F2(
+	function (isGood, list) {
+		return A3(
+			$elm$core$List$foldr,
+			F2(
+				function (x, xs) {
+					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
+				}),
+			_List_Nil,
+			list);
+	});
 var $author$project$Node$init = function (id) {
 	return {
 		code: 'x',
@@ -7579,6 +7582,14 @@ var $author$project$Node$init = function (id) {
 		pos: A2($author$project$Vec2$Vec2, 200, 300),
 		selected: true
 	};
+};
+var $author$project$Main$isConnecting = function (model) {
+	var _v0 = model.connectingSocket;
+	if (_v0.$ === 'Just') {
+		return true;
+	} else {
+		return false;
+	}
 };
 var $elm$core$List$maximum = function (list) {
 	if (list.b) {
@@ -7649,17 +7660,6 @@ var $author$project$Main$connectionHasAnyNode = F2(
 var $author$project$Main$connectionHasNoNode = F2(
 	function (nodes, connection) {
 		return !A2($author$project$Main$connectionHasAnyNode, nodes, connection);
-	});
-var $elm$core$List$filter = F2(
-	function (isGood, list) {
-		return A3(
-			$elm$core$List$foldr,
-			F2(
-				function (x, xs) {
-					return isGood(x) ? A2($elm$core$List$cons, x, xs) : xs;
-				}),
-			_List_Nil,
-			list);
 	});
 var $author$project$Main$removeSelected = function (model) {
 	var nodesToRemove = A2(
@@ -7793,11 +7793,14 @@ var $author$project$Main$select = F2(
 				selected: _Utils_eq(node, target)
 			});
 	});
+var $author$project$Node$selected = function (node) {
+	return node.selected;
+};
 var $author$project$Node$setCode = F2(
 	function (code, node) {
-		return node.selected ? _Utils_update(
+		return _Utils_update(
 			node,
-			{code: code}) : node;
+			{code: code});
 	});
 var $author$project$Vec2$sub = F2(
 	function (a, b) {
@@ -7808,7 +7811,7 @@ var $author$project$Main$update = F2(
 		switch (msg.$) {
 			case 'Select':
 				var node = msg.a;
-				var startDragging = !$author$project$Main$connecting(model);
+				var startDragging = !$author$project$Main$isConnecting(model);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -7836,22 +7839,26 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 			case 'Drag':
 				var pos = msg.a;
-				return model.dragging ? _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							lastCursorPos: pos,
-							nodes: A2(
-								$elm$core$List$map,
-								$author$project$Main$drag(
-									A2($author$project$Vec2$sub, pos, model.lastCursorPos)),
-								model.nodes)
-						}),
-					$elm$core$Platform$Cmd$none) : _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{lastCursorPos: pos}),
-					$elm$core$Platform$Cmd$none);
+				if (model.dragging) {
+					var delta = A2($author$project$Vec2$sub, pos, model.lastCursorPos);
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								lastCursorPos: pos,
+								nodes: A2(
+									$elm$core$List$map,
+									$author$project$Main$drag(delta),
+									model.nodes)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{lastCursorPos: pos}),
+						$elm$core$Platform$Cmd$none);
+				}
 			case 'Add':
 				var id = $author$project$Main$nextId(model);
 				return _Utils_Tuple2(
@@ -7881,7 +7888,7 @@ var $author$project$Main$update = F2(
 							nodes: A2(
 								$elm$core$List$map,
 								$author$project$Node$setCode(code),
-								model.nodes)
+								A2($elm$core$List$filter, $author$project$Node$selected, model.nodes))
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'UpdateTime':
@@ -7900,7 +7907,7 @@ var $author$project$Main$update = F2(
 							connectingSocket: $elm$core$Maybe$Just(socket)
 						}),
 					$elm$core$Platform$Cmd$none);
-			case 'Resize':
+			case 'ResizeWindow':
 				var _v1 = msg.a;
 				var width = _v1.a;
 				var height = _v1.b;
@@ -7924,8 +7931,8 @@ var $author$project$Main$update = F2(
 				var socket = msg.a;
 				var _v2 = model.connectingSocket;
 				if (_v2.$ === 'Just') {
-					var justConnectingSocket = _v2.a;
-					var connection = A2($author$project$Main$connectSockets, justConnectingSocket, socket);
+					var otherSocket = _v2.a;
+					var connection = A2($author$project$Main$connectSockets, socket, otherSocket);
 					if (connection.$ === 'Just') {
 						var justConnection = connection.a;
 						return _Utils_Tuple2(
@@ -8278,7 +8285,7 @@ var $author$project$Main$connectedLines = function (model) {
 		model.connections);
 };
 var $author$project$Main$connectingLine = function (model) {
-	if ($author$project$Main$connecting(model)) {
+	if ($author$project$Main$isConnecting(model)) {
 		var b = _Utils_Tuple2(model.lastCursorPos.x, model.lastCursorPos.y);
 		var a = function () {
 			var _v0 = model.connectingSocket;
@@ -16033,8 +16040,8 @@ var $elm$html$Html$Events$onMouseDown = function (msg) {
 var $mdgriffith$elm_ui$Element$Events$onMouseDown = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseDown);
 var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
 var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
-var $author$project$Main$EndConnect = function (a) {
-	return {$: 'EndConnect', a: a};
+var $author$project$Main$Connect = function (a) {
+	return {$: 'Connect', a: a};
 };
 var $author$project$Main$StartConnect = function (a) {
 	return {$: 'StartConnect', a: a};
@@ -16060,7 +16067,7 @@ var $author$project$Main$putEl = function (socket) {
 				$mdgriffith$elm_ui$Element$Events$onMouseDown(
 				$author$project$Main$StartConnect(socket)),
 				$mdgriffith$elm_ui$Element$Events$onMouseUp(
-				$author$project$Main$EndConnect(socket))
+				$author$project$Main$Connect(socket))
 			]),
 		$mdgriffith$elm_ui$Element$none);
 };

@@ -1,4 +1,4 @@
-module Node exposing (Node, decoder, encode, init, inputCount, outputCount, previewCode, setCode)
+module Node exposing (Node, decoder, encode, init, inputCount, outputCount, previewCode, selected, setCode)
 
 import Json.Decode as Decode exposing (Decoder, int, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -34,13 +34,14 @@ decoder =
         |> required "id" int
 
 
+selected : Node -> Bool
+selected node =
+    node.selected
+
+
 setCode : String -> Node -> Node
 setCode code node =
-    if node.selected then
-        { node | code = code }
-
-    else
-        node
+    { node | code = code }
 
 
 returnType : Node -> Maybe String

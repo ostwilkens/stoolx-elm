@@ -18,10 +18,10 @@ import Html exposing (Html)
 import Html.Attributes
 import Html.Events.Extra.Mouse as Mouse
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (optional, required)
+import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
-import List exposing (any, filter, head, map, maximum, range, repeat)
-import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, setCode)
+import List exposing (any, filter, head, map, maximum, range)
+import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, selected, setCode)
 import Ports exposing (storeModel)
 import Shader exposing (fragmentShader, mesh, vertexShader)
 import Task
@@ -40,8 +40,14 @@ type alias Model =
     }
 
 
-connecting : Model -> Bool
-connecting model =
+type alias SavedModel =
+    { nodes : List Node
+    , connections : List Connection
+    }
+
+
+isConnecting : Model -> Bool
+isConnecting model =
     case model.connectingSocket of
         Just _ ->
             True
@@ -50,16 +56,10 @@ connecting model =
             False
 
 
-type alias PartialModel =
-    { nodes : List Node
-    , connections : List Connection
-    }
-
-
 init : Maybe Encode.Value -> ( Model, Cmd Msg )
 init flags =
     let
-        partialModel =
+        savedModel =
             case flags of
                 Just modelJson ->
                     decodeStoredModel modelJson
@@ -67,13 +67,13 @@ init flags =
                 Nothing ->
                     { nodes = [], connections = [] }
     in
-    ( { nodes = partialModel.nodes
+    ( { nodes = savedModel.nodes
+      , connections = savedModel.connections
       , dragging = False
       , lastCursorPos = Vec2 0 0
       , time = 0
       , windowSize = ( 0, 0 )
       , connectingSocket = Nothing
-      , connections = partialModel.connections
       }
     , Task.perform InitWindowSize Browser.Dom.getViewport
     )
@@ -93,7 +93,7 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ Browser.Events.onAnimationFrameDelta UpdateTime
-        , Browser.Events.onResize (\w h -> Resize ( toFloat w, toFloat h ))
+        , Browser.Events.onResize (\w h -> ResizeWindow ( toFloat w, toFloat h ))
         ]
 
 
@@ -108,9 +108,9 @@ type Msg
     | SetCode String
     | UpdateTime Float
     | StartConnect Socket
-    | Resize ( Float, Float )
+    | ResizeWindow ( Float, Float )
     | InitWindowSize Browser.Dom.Viewport
-    | EndConnect Socket
+    | Connect Socket
 
 
 nextId : Model -> Int
@@ -124,9 +124,12 @@ update msg model =
         Select node ->
             let
                 startDragging =
-                    not (connecting model)
+                    not (isConnecting model)
             in
-            ( { model | nodes = map (select node) model.nodes, dragging = startDragging }
+            ( { model
+                | nodes = map (select node) model.nodes
+                , dragging = startDragging
+              }
             , Cmd.none
             )
 
@@ -136,13 +139,23 @@ update msg model =
             )
 
         Release ->
-            ( { model | dragging = False, connectingSocket = Nothing }
+            ( { model
+                | dragging = False
+                , connectingSocket = Nothing
+              }
             , Cmd.none
             )
 
         Drag pos ->
             if model.dragging then
-                ( { model | nodes = map (drag (Vec2.sub pos model.lastCursorPos)) model.nodes, lastCursorPos = pos }
+                let
+                    delta =
+                        Vec2.sub pos model.lastCursorPos
+                in
+                ( { model
+                    | nodes = map (drag delta) model.nodes
+                    , lastCursorPos = pos
+                  }
                 , Cmd.none
                 )
 
@@ -171,7 +184,7 @@ update msg model =
             )
 
         SetCode code ->
-            ( { model | nodes = map (setCode code) model.nodes }
+            ( { model | nodes = map (setCode code) (filter selected model.nodes) }
             , Cmd.none
             )
 
@@ -185,7 +198,7 @@ update msg model =
             , Cmd.none
             )
 
-        Resize ( width, height ) ->
+        ResizeWindow ( width, height ) ->
             ( { model | windowSize = ( width, height ) }
             , Cmd.none
             )
@@ -195,12 +208,12 @@ update msg model =
             , Cmd.none
             )
 
-        EndConnect socket ->
+        Connect socket ->
             case model.connectingSocket of
-                Just justConnectingSocket ->
+                Just otherSocket ->
                     let
                         connection =
-                            connectSockets justConnectingSocket socket
+                            connectSockets socket otherSocket
                     in
                     case connection of
                         Just justConnection ->
@@ -256,18 +269,18 @@ encodeModel model =
         ]
 
 
-modelDecoder : Decoder PartialModel
+modelDecoder : Decoder SavedModel
 modelDecoder =
-    Decode.succeed PartialModel
+    Decode.succeed SavedModel
         |> required "nodes" (Decode.list Node.decoder)
         |> required "connections" (Decode.list Connection.decoder)
 
 
-decodeStoredModel : Encode.Value -> PartialModel
+decodeStoredModel : Encode.Value -> SavedModel
 decodeStoredModel modelJson =
     case Decode.decodeValue modelDecoder modelJson of
-        Ok partialModel ->
-            partialModel
+        Ok savedModel ->
+            savedModel
 
         Err _ ->
             { nodes = [], connections = [] }
@@ -586,7 +599,7 @@ putEl socket =
         , height (px 20)
         , Background.color (rgb 0.9 0.3 0.3)
         , Events.onMouseDown (StartConnect socket)
-        , Events.onMouseUp (EndConnect socket)
+        , Events.onMouseUp (Connect socket)
         ]
         Element.none
 
@@ -670,7 +683,7 @@ socketPos model socket =
 
 connectingLine : Model -> Canvas.Renderable
 connectingLine model =
-    if connecting model then
+    if isConnecting model then
         let
             a =
                 case model.connectingSocket of
