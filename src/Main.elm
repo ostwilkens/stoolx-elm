@@ -591,17 +591,17 @@ nodeEl node =
 inputsEl : Int -> Int -> Element Msg
 inputsEl id count =
     row [ alignBottom, spacing 10, centerX ]
-        (map (\i -> putEl (Input id i)) (range 0 (count - 1)))
+        (map (\i -> socketEl (Input id i)) (range 0 (count - 1)))
 
 
 outputsEl : Int -> Int -> Element Msg
 outputsEl id count =
     row [ alignTop, spacing 10, centerX ]
-        (map (\i -> putEl (Output id i)) (range 0 (count - 1)))
+        (map (\i -> socketEl (Output id i)) (range 0 (count - 1)))
 
 
-putEl : Socket -> Element Msg
-putEl socket =
+socketEl : Socket -> Element Msg
+socketEl socket =
     el
         [ width (px 20)
         , height (px 20)

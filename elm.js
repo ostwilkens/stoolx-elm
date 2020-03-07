@@ -16127,7 +16127,7 @@ var $elm$html$Html$Events$onMouseUp = function (msg) {
 		$elm$json$Json$Decode$succeed(msg));
 };
 var $mdgriffith$elm_ui$Element$Events$onMouseUp = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseUp);
-var $author$project$Main$putEl = function (socket) {
+var $author$project$Main$socketEl = function (socket) {
 	return A2(
 		$mdgriffith$elm_ui$Element$el,
 		_List_fromArray(
@@ -16158,7 +16158,7 @@ var $author$project$Main$inputsEl = F2(
 			A2(
 				$elm$core$List$map,
 				function (i) {
-					return $author$project$Main$putEl(
+					return $author$project$Main$socketEl(
 						A2($author$project$Connection$Input, id, i));
 				},
 				A2($elm$core$List$range, 0, count - 1)));
@@ -16200,7 +16200,7 @@ var $author$project$Main$outputsEl = F2(
 			A2(
 				$elm$core$List$map,
 				function (i) {
-					return $author$project$Main$putEl(
+					return $author$project$Main$socketEl(
 						A2($author$project$Connection$Output, id, i));
 				},
 				A2($elm$core$List$range, 0, count - 1)));
