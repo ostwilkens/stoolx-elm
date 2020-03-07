@@ -1,8 +1,10 @@
-module Connection exposing (Connection, Socket(..), decoder, encode, getId, getIndex)
+module Connection exposing (Connection, Socket(..), decoder, encode, getId, getIndex, removePreviousConnection, connectionHasNoNode)
 
 import Json.Decode as Decode exposing (Decoder, int)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
+import List exposing (filter, any)
+import Node exposing (Node)
 
 
 type alias Connection =
@@ -79,3 +81,23 @@ outputDecoder =
     Decode.succeed Output
         |> required "id" int
         |> required "index" int
+
+
+removePreviousConnection : List Connection -> Connection -> List Connection
+removePreviousConnection connections newConnection =
+    filter (\c -> c.input /= newConnection.input) connections
+
+
+connectionHasNoNode : List Node -> Connection -> Bool
+connectionHasNoNode nodes connection =
+    not (connectionHasAnyNode nodes connection)
+
+
+connectionHasAnyNode : List Node -> Connection -> Bool
+connectionHasAnyNode nodes connection =
+    any (connectionHasNode connection) nodes
+
+
+connectionHasNode : Connection -> Node -> Bool
+connectionHasNode connection node =
+    getId connection.input == node.id || getId connection.output == node.id

@@ -7,7 +7,7 @@ import Canvas
 import Canvas.Settings
 import Canvas.Settings.Line
 import Color
-import Connection exposing (Connection, Socket(..), decoder, getId, getIndex)
+import Connection exposing (Connection, Socket(..), connectionHasNoNode, decoder, getId, getIndex, removePreviousConnection)
 import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, htmlAttribute, inFront, moveDown, moveRight, padding, paddingXY, px, rgb, rgba, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -17,43 +17,15 @@ import Element.Input as Input
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events.Extra.Mouse as Mouse
-import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 import List exposing (any, filter, head, map, maximum, range)
+import Model exposing (Model, Msg(..), SavedModel, connecting, decodeStoredModel, removeSelected)
 import Node exposing (Node, decoder, encode, inputCount, outputCount, previewCode, setCode)
 import Ports exposing (storeModel)
 import Shader exposing (fragmentShader, mesh, vertexShader)
 import Task
 import Vec2 exposing (Vec2, encode)
 import WebGL
-
-
-type alias Model =
-    { nodes : List Node
-    , connections : List Connection
-    , dragging : Bool
-    , lastCursorPos : Vec2
-    , time : Float
-    , windowSize : ( Float, Float )
-    , connectingSocket : Maybe Socket
-    }
-
-
-type alias SavedModel =
-    { nodes : List Node
-    , connections : List Connection
-    }
-
-
-isConnecting : Model -> Bool
-isConnecting model =
-    case model.connectingSocket of
-        Just _ ->
-            True
-
-        Nothing ->
-            False
 
 
 init : Maybe Encode.Value -> ( Model, Cmd Msg )
@@ -97,22 +69,6 @@ subscriptions _ =
         ]
 
 
-type Msg
-    = Select Node
-    | Deselect
-    | Release
-    | Drag Vec2
-    | Add
-    | Remove
-    | Save
-    | SetCode String
-    | UpdateTime Float
-    | StartConnect Socket
-    | ResizeWindow ( Float, Float )
-    | InitWindowSize Browser.Dom.Viewport
-    | Connect Socket
-
-
 nextId : Model -> Int
 nextId model =
     Maybe.withDefault 0 (maximum (map (\n -> n.id) model.nodes)) + 1
@@ -124,7 +80,7 @@ update msg model =
         Select node ->
             let
                 startDragging =
-                    not (isConnecting model)
+                    not (connecting model)
             in
             ( { model
                 | nodes = map (select node) model.nodes
@@ -228,11 +184,6 @@ update msg model =
                     ( model, Cmd.none )
 
 
-removePreviousConnection : List Connection -> Connection -> List Connection
-removePreviousConnection connections newConnection =
-    filter (\c -> c.input /= newConnection.input) connections
-
-
 saveModel : Model -> Cmd msg
 saveModel model =
     encodeModel model
@@ -247,23 +198,6 @@ encodeModel model =
         ]
 
 
-modelDecoder : Decoder SavedModel
-modelDecoder =
-    Decode.succeed SavedModel
-        |> required "nodes" (Decode.list Node.decoder)
-        |> required "connections" (Decode.list Connection.decoder)
-
-
-decodeStoredModel : Encode.Value -> SavedModel
-decodeStoredModel modelJson =
-    case Decode.decodeValue modelDecoder modelJson of
-        Ok savedModel ->
-            savedModel
-
-        Err _ ->
-            { nodes = [], connections = [] }
-
-
 select : Node -> Node -> Node
 select target node =
     { node | selected = node == target }
@@ -272,36 +206,6 @@ select target node =
 deselect : Node -> Node
 deselect node =
     { node | selected = False }
-
-
-removeSelected : Model -> Model
-removeSelected model =
-    let
-        nodesToRemove =
-            filter (\n -> n.selected) model.nodes
-
-        nodes =
-            filter (\n -> not n.selected) model.nodes
-
-        connections =
-            filter (connectionHasNoNode nodesToRemove) model.connections
-    in
-    { model | nodes = nodes, connections = connections }
-
-
-connectionHasNoNode : List Node -> Connection -> Bool
-connectionHasNoNode nodes connection =
-    not (connectionHasAnyNode nodes connection)
-
-
-connectionHasAnyNode : List Node -> Connection -> Bool
-connectionHasAnyNode nodes connection =
-    any (connectionHasNode connection) nodes
-
-
-connectionHasNode : Connection -> Node -> Bool
-connectionHasNode connection node =
-    getId connection.input == node.id || getId connection.output == node.id
 
 
 connectSockets : Model -> Socket -> Socket -> Maybe Connection
@@ -691,7 +595,7 @@ socketPos model socket =
 
 connectingLine : Model -> Canvas.Renderable
 connectingLine model =
-    if isConnecting model then
+    if connecting model then
         let
             a =
                 case model.connectingSocket of
