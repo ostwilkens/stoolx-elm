@@ -3,22 +3,28 @@ module Main exposing (main)
 import Browser
 import Browser.Dom
 import Browser.Events
-import Connection exposing (Connection, Socket(..), getId, removePreviousConnection)
-import Element exposing (Element, alignRight, el, fill, height, htmlAttribute, inFront, px, rgba, row, width)
-import Element.Background as Background
+import Connection exposing (Socket(..), removePreviousConnection)
+import Element exposing (el, fill, height, htmlAttribute, inFront, row, width)
 import Element.Events as Events
-import Element.Font as Font
-import Element.Input as Input
-import Elements exposing (canvasEl, codeFont, menuEl, nodeEl, shaderEl, white)
+import Elements exposing (canvasEl, codeEl, menuEl, nodeEl, shaderEl)
 import Html exposing (Html)
 import Html.Events.Extra.Mouse as Mouse
 import Json.Encode as Encode
-import List exposing (any, filter, head, map, maximum)
-import Model exposing (Model, Msg(..), connecting, decodeStoredModel, removeSelected)
-import Node exposing (Node, encode, setCode)
-import Ports exposing (storeModel)
+import List exposing (map)
+import Model exposing (Model, Msg(..), connectSockets, connecting, decodeStoredModel, removeSelected, saveModel)
+import Node exposing (deselect, move, nextId, select, setCode)
 import Task
-import Vec2 exposing (Vec2, encode)
+import Vec2 exposing (Vec2)
+
+
+main : Program (Maybe Encode.Value) Model Msg
+main =
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
 
 
 init : Maybe Encode.Value -> ( Model, Cmd Msg )
@@ -44,27 +50,29 @@ init flags =
     )
 
 
-main : Program (Maybe Encode.Value) Model Msg
-main =
-    Browser.element
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
-
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ Browser.Events.onAnimationFrameDelta UpdateTime
-        , Browser.Events.onResize (\w h -> ResizeWindow (Vec2 (toFloat w) (toFloat h)))
-        ]
-
-
-nextId : Model -> Int
-nextId model =
-    Maybe.withDefault 0 (maximum (map (\n -> n.id) model.nodes)) + 1
+view : Model -> Html Msg
+view model =
+    let
+        center =
+            Vec2.half model.windowSize
+    in
+    Element.layout [] <|
+        row [ height fill, width fill ]
+            [ el
+                ([ width fill
+                 , height fill
+                 , htmlAttribute (Mouse.onMove (clientPos >> Drag))
+                 , Events.onMouseUp Release
+                 , Events.onDoubleClick Deselect
+                 , Element.behindContent (shaderEl model.time)
+                 , inFront (codeEl model.nodes)
+                 ]
+                    ++ map inFront (map (nodeEl center) model.nodes)
+                    ++ [ inFront (canvasEl model) ]
+                )
+                menuEl
+            , Element.none
+            ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -102,7 +110,7 @@ update msg model =
                         Vec2.sub pos model.lastCursorPos
                 in
                 ( { model
-                    | nodes = map (drag delta) model.nodes
+                    | nodes = map (move delta) model.nodes
                     , lastCursorPos = pos
                   }
                 , Cmd.none
@@ -116,7 +124,7 @@ update msg model =
         Add ->
             let
                 id =
-                    nextId model
+                    nextId model.nodes
             in
             ( { model | nodes = Node.init id :: map deselect model.nodes }
             , Cmd.none
@@ -177,113 +185,12 @@ update msg model =
                     ( model, Cmd.none )
 
 
-saveModel : Model -> Cmd msg
-saveModel model =
-    encodeModel model
-        |> Ports.storeModel
-
-
-encodeModel : Model -> Encode.Value
-encodeModel model =
-    Encode.object
-        [ ( "nodes", Encode.list Node.encode model.nodes )
-        , ( "connections", Encode.list Connection.encode model.connections )
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ Browser.Events.onAnimationFrameDelta UpdateTime
+        , Browser.Events.onResize (\w h -> ResizeWindow (Vec2 (toFloat w) (toFloat h)))
         ]
-
-
-select : Node -> Node -> Node
-select target node =
-    { node | selected = node == target }
-
-
-deselect : Node -> Node
-deselect node =
-    { node | selected = False }
-
-
-connectSockets : Model -> Socket -> Socket -> Maybe Connection
-connectSockets model a b =
-    let
-        input =
-            case a of
-                Input _ _ ->
-                    a
-
-                Output _ _ ->
-                    b
-
-        output =
-            case a of
-                Output _ _ ->
-                    a
-
-                Input _ _ ->
-                    b
-
-        inputExists =
-            any (\n -> n.id == getId input) model.nodes
-
-        inputIsInput =
-            case input of
-                Input _ _ ->
-                    True
-
-                Output _ _ ->
-                    False
-
-        outputExists =
-            any (\n -> n.id == getId output) model.nodes
-
-        outputIsOutput =
-            case output of
-                Output _ _ ->
-                    True
-
-                Input _ _ ->
-                    False
-
-        wouldBeDuplicate =
-            any (\c -> c.input == input && c.output == output) model.connections
-
-        selfReference =
-            getId input == getId output
-
-        valid =
-            inputExists
-                && inputIsInput
-                && outputExists
-                && outputIsOutput
-                && not wouldBeDuplicate
-                && not selfReference
-    in
-    if valid then
-        Just { input = input, output = output }
-
-    else
-        Nothing
-
-
-drag : Vec2 -> Node -> Node
-drag offset node =
-    if node.selected then
-        { node | pos = Vec2.add node.pos offset }
-
-    else
-        node
-
-
-getSelectedCode : List Node -> String
-getSelectedCode nodes =
-    let
-        selectedNodes =
-            filter (\n -> n.selected) nodes
-    in
-    case head selectedNodes of
-        Just node ->
-            node.code
-
-        Nothing ->
-            ""
 
 
 clientPos : Mouse.Event -> Vec2
@@ -293,51 +200,3 @@ clientPos event =
             event.clientPos
     in
     Vec2 x y
-
-
-codeEl : List Node -> Element Msg
-codeEl nodes =
-    if any (\n -> n.selected) nodes then
-        Input.multiline
-            [ width fill
-            , height (px 100)
-            , Background.color (rgba 0.3 0.3 0.3 0.5)
-            , Font.color white
-            , Font.size 14
-            , Font.family codeFont
-            , alignRight
-            ]
-            { label = Input.labelHidden "code"
-            , onChange = SetCode
-            , placeholder = Nothing
-            , text = getSelectedCode nodes
-            , spellcheck = False
-            }
-
-    else
-        Element.none
-
-
-view : Model -> Html Msg
-view model =
-    let
-        center =
-            Vec2.half model.windowSize
-    in
-    Element.layout [] <|
-        row [ height fill, width fill ]
-            [ el
-                ([ width fill
-                 , height fill
-                 , htmlAttribute (Mouse.onMove (clientPos >> Drag))
-                 , Events.onMouseUp Release
-                 , Events.onDoubleClick Deselect
-                 , Element.behindContent (shaderEl model.time)
-                 , inFront (codeEl model.nodes)
-                 ]
-                    ++ map inFront (map (nodeEl center) model.nodes)
-                    ++ [ inFront (canvasEl model) ]
-                )
-                menuEl
-            , Element.none
-            ]

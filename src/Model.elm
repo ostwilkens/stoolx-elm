@@ -1,12 +1,13 @@
-module Model exposing (Model, Msg(..), SavedModel, connecting, decodeStoredModel, removeSelected)
+module Model exposing (Model, Msg(..), SavedModel, connectSockets, connecting, decodeStoredModel, removeSelected, saveModel)
 
 import Browser.Dom
-import Connection exposing (Connection, Socket, connectionHasNoNode)
+import Connection exposing (Connection, Socket(..), connectionHasNoNode, getId)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
-import List exposing (filter)
+import List exposing (any, filter)
 import Node exposing (Node)
+import Ports exposing (storeModel)
 import Vec2 exposing (Vec2)
 
 
@@ -53,6 +54,14 @@ type Msg
     | Connect Socket
 
 
+encodeModel : Model -> Encode.Value
+encodeModel model =
+    Encode.object
+        [ ( "nodes", Encode.list Node.encode model.nodes )
+        , ( "connections", Encode.list Connection.encode model.connections )
+        ]
+
+
 modelDecoder : Decoder SavedModel
 modelDecoder =
     Decode.succeed SavedModel
@@ -83,3 +92,71 @@ removeSelected model =
             filter (connectionHasNoNode nodesToRemove) model.connections
     in
     { model | nodes = nodes, connections = connections }
+
+
+saveModel : Model -> Cmd msg
+saveModel model =
+    encodeModel model
+        |> Ports.storeModel
+
+
+connectSockets : Model -> Socket -> Socket -> Maybe Connection
+connectSockets model a b =
+    let
+        input =
+            case a of
+                Input _ _ ->
+                    a
+
+                Output _ _ ->
+                    b
+
+        output =
+            case a of
+                Output _ _ ->
+                    a
+
+                Input _ _ ->
+                    b
+
+        inputExists =
+            any (\n -> n.id == getId input) model.nodes
+
+        inputIsInput =
+            case input of
+                Input _ _ ->
+                    True
+
+                Output _ _ ->
+                    False
+
+        outputExists =
+            any (\n -> n.id == getId output) model.nodes
+
+        outputIsOutput =
+            case output of
+                Output _ _ ->
+                    True
+
+                Input _ _ ->
+                    False
+
+        wouldBeDuplicate =
+            any (\c -> c.input == input && c.output == output) model.connections
+
+        selfReferencing =
+            getId input == getId output
+
+        valid =
+            inputExists
+                && inputIsInput
+                && outputExists
+                && outputIsOutput
+                && not wouldBeDuplicate
+                && not selfReferencing
+    in
+    if valid then
+        Just { input = input, output = output }
+
+    else
+        Nothing

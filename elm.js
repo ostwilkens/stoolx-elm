@@ -7568,7 +7568,7 @@ var $author$project$Connection$getId = function (socket) {
 	}
 };
 var $elm$core$Basics$not = _Basics_not;
-var $author$project$Main$connectSockets = F3(
+var $author$project$Model$connectSockets = F3(
 	function (model, a, b) {
 		var output = function () {
 			if (a.$ === 'Output') {
@@ -7614,7 +7614,7 @@ var $author$project$Main$connectSockets = F3(
 				return false;
 			}
 		}();
-		var selfReference = _Utils_eq(
+		var selfReferencing = _Utils_eq(
 			$author$project$Connection$getId(input),
 			$author$project$Connection$getId(output));
 		var wouldBeDuplicate = A2(
@@ -7623,7 +7623,7 @@ var $author$project$Main$connectSockets = F3(
 				return _Utils_eq(c.input, input) && _Utils_eq(c.output, output);
 			},
 			model.connections);
-		var valid = inputExists && (inputIsInput && (outputExists && (outputIsOutput && ((!wouldBeDuplicate) && (!selfReference)))));
+		var valid = inputExists && (inputIsInput && (outputExists && (outputIsOutput && ((!wouldBeDuplicate) && (!selfReferencing)))));
 		return valid ? $elm$core$Maybe$Just(
 			{input: input, output: output}) : $elm$core$Maybe$Nothing;
 	});
@@ -7635,23 +7635,11 @@ var $author$project$Model$connecting = function (model) {
 		return false;
 	}
 };
-var $author$project$Main$deselect = function (node) {
+var $author$project$Node$deselect = function (node) {
 	return _Utils_update(
 		node,
 		{selected: false});
 };
-var $author$project$Vec2$add = F2(
-	function (a, b) {
-		return A2($author$project$Vec2$Vec2, a.x + b.x, a.y + b.y);
-	});
-var $author$project$Main$drag = F2(
-	function (offset, node) {
-		return node.selected ? _Utils_update(
-			node,
-			{
-				pos: A2($author$project$Vec2$add, node.pos, offset)
-			}) : node;
-	});
 var $author$project$Node$init = function (id) {
 	return {
 		code: 'x',
@@ -7660,6 +7648,18 @@ var $author$project$Node$init = function (id) {
 		selected: true
 	};
 };
+var $author$project$Vec2$add = F2(
+	function (a, b) {
+		return A2($author$project$Vec2$Vec2, a.x + b.x, a.y + b.y);
+	});
+var $author$project$Node$move = F2(
+	function (offset, node) {
+		return node.selected ? _Utils_update(
+			node,
+			{
+				pos: A2($author$project$Vec2$add, node.pos, offset)
+			}) : node;
+	});
 var $elm$core$List$maximum = function (list) {
 	if (list.b) {
 		var x = list.a;
@@ -7679,7 +7679,7 @@ var $elm$core$Maybe$withDefault = F2(
 			return _default;
 		}
 	});
-var $author$project$Main$nextId = function (model) {
+var $author$project$Node$nextId = function (nodes) {
 	return A2(
 		$elm$core$Maybe$withDefault,
 		0,
@@ -7689,7 +7689,7 @@ var $author$project$Main$nextId = function (model) {
 				function (n) {
 					return n.id;
 				},
-				model.nodes))) + 1;
+				nodes))) + 1;
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
@@ -7847,7 +7847,7 @@ var $elm$json$Json$Encode$list = F2(
 				_Json_emptyArray(_Utils_Tuple0),
 				entries));
 	});
-var $author$project$Main$encodeModel = function (model) {
+var $author$project$Model$encodeModel = function (model) {
 	return $elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
@@ -7860,11 +7860,11 @@ var $author$project$Main$encodeModel = function (model) {
 			]));
 };
 var $author$project$Ports$storeModel = _Platform_outgoingPort('storeModel', $elm$core$Basics$identity);
-var $author$project$Main$saveModel = function (model) {
+var $author$project$Model$saveModel = function (model) {
 	return $author$project$Ports$storeModel(
-		$author$project$Main$encodeModel(model));
+		$author$project$Model$encodeModel(model));
 };
-var $author$project$Main$select = F2(
+var $author$project$Node$select = F2(
 	function (target, node) {
 		return _Utils_update(
 			node,
@@ -7895,7 +7895,7 @@ var $author$project$Main$update = F2(
 							dragging: startDragging,
 							nodes: A2(
 								$elm$core$List$map,
-								$author$project$Main$select(node),
+								$author$project$Node$select(node),
 								model.nodes)
 						}),
 					$elm$core$Platform$Cmd$none);
@@ -7904,7 +7904,7 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{
-							nodes: A2($elm$core$List$map, $author$project$Main$deselect, model.nodes)
+							nodes: A2($elm$core$List$map, $author$project$Node$deselect, model.nodes)
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'Release':
@@ -7924,7 +7924,7 @@ var $author$project$Main$update = F2(
 								lastCursorPos: pos,
 								nodes: A2(
 									$elm$core$List$map,
-									$author$project$Main$drag(delta),
+									$author$project$Node$move(delta),
 									model.nodes)
 							}),
 						$elm$core$Platform$Cmd$none);
@@ -7936,7 +7936,7 @@ var $author$project$Main$update = F2(
 						$elm$core$Platform$Cmd$none);
 				}
 			case 'Add':
-				var id = $author$project$Main$nextId(model);
+				var id = $author$project$Node$nextId(model.nodes);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -7944,7 +7944,7 @@ var $author$project$Main$update = F2(
 							nodes: A2(
 								$elm$core$List$cons,
 								$author$project$Node$init(id),
-								A2($elm$core$List$map, $author$project$Main$deselect, model.nodes))
+								A2($elm$core$List$map, $author$project$Node$deselect, model.nodes))
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'Remove':
@@ -7954,7 +7954,7 @@ var $author$project$Main$update = F2(
 			case 'Save':
 				return _Utils_Tuple2(
 					model,
-					$author$project$Main$saveModel(model));
+					$author$project$Model$saveModel(model));
 			case 'SetCode':
 				var code = msg.a;
 				return _Utils_Tuple2(
@@ -8004,7 +8004,7 @@ var $author$project$Main$update = F2(
 				var _v1 = model.connectingSocket;
 				if (_v1.$ === 'Just') {
 					var otherSocket = _v1.a;
-					var connection = A3($author$project$Main$connectSockets, model, socket, otherSocket);
+					var connection = A3($author$project$Model$connectSockets, model, socket, otherSocket);
 					if (connection.$ === 'Just') {
 						var justConnection = connection.a;
 						return _Utils_Tuple2(
@@ -9275,7 +9275,7 @@ var $mdgriffith$elm_ui$Internal$Model$Fill = function (a) {
 	return {$: 'Fill', a: a};
 };
 var $mdgriffith$elm_ui$Element$fill = $mdgriffith$elm_ui$Internal$Model$Fill(1);
-var $author$project$Main$getSelectedCode = function (nodes) {
+var $author$project$Node$getSelectedCode = function (nodes) {
 	var selectedNodes = A2(
 		$elm$core$List$filter,
 		function (n) {
@@ -15577,7 +15577,7 @@ var $mdgriffith$elm_ui$Element$Font$size = function (i) {
 		$mdgriffith$elm_ui$Internal$Model$FontSize(i));
 };
 var $author$project$Elements$white = A3($mdgriffith$elm_ui$Element$rgb, 1, 1, 1);
-var $author$project$Main$codeEl = function (nodes) {
+var $author$project$Elements$codeEl = function (nodes) {
 	return A2(
 		$elm$core$List$any,
 		function (n) {
@@ -15602,7 +15602,7 @@ var $author$project$Main$codeEl = function (nodes) {
 			onChange: $author$project$Model$SetCode,
 			placeholder: $elm$core$Maybe$Nothing,
 			spellcheck: false,
-			text: $author$project$Main$getSelectedCode(nodes)
+			text: $author$project$Node$getSelectedCode(nodes)
 		}) : $mdgriffith$elm_ui$Element$none;
 };
 var $mdgriffith$elm_ui$Internal$Model$OnlyDynamic = F2(
@@ -16523,7 +16523,7 @@ var $author$project$Main$view = function (model) {
 								$mdgriffith$elm_ui$Element$behindContent(
 								$author$project$Elements$shaderEl(model.time)),
 								$mdgriffith$elm_ui$Element$inFront(
-								$author$project$Main$codeEl(model.nodes))
+								$author$project$Elements$codeEl(model.nodes))
 							]),
 						_Utils_ap(
 							A2(

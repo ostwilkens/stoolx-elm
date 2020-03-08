@@ -1,20 +1,20 @@
-module Elements exposing (canvasEl, codeFont, menuEl, nodeEl, shaderEl, white)
+module Elements exposing (canvasEl, codeEl, codeFont, menuEl, nodeEl, shaderEl, white)
 
 import Canvas
 import Canvas.Settings
 import Canvas.Settings.Line
 import Color
 import Connection exposing (Connection, Socket(..), getId, getIndex)
-import Element exposing (Attribute, Color, Element, alignBottom, alignTop, centerX, centerY, column, el, height, moveDown, moveRight, paddingXY, px, rgb, rgba, row, spacing, text, width)
+import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, moveDown, moveRight, paddingXY, px, rgb, rgba, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
-import List exposing (filter, head, map, range)
+import List exposing (any, filter, head, map, range)
 import Model exposing (Model, Msg(..))
-import Node exposing (Node, inputCount, outputCount, previewCode)
+import Node exposing (Node, getSelectedCode, inputCount, outputCount, previewCode)
 import Shader exposing (fragmentShader, mesh, vertexShader)
 import Vec2 exposing (Vec2)
 import WebGL
@@ -300,3 +300,26 @@ narrowFont =
     [ Font.typeface "Arial Narrow"
     , Font.sansSerif
     ]
+
+
+codeEl : List Node -> Element Msg
+codeEl nodes =
+    if any (\n -> n.selected) nodes then
+        Input.multiline
+            [ width fill
+            , height (px 100)
+            , Background.color (rgba 0.3 0.3 0.3 0.5)
+            , Font.color white
+            , Font.size 14
+            , Font.family codeFont
+            , alignRight
+            ]
+            { label = Input.labelHidden "code"
+            , onChange = SetCode
+            , placeholder = Nothing
+            , text = getSelectedCode nodes
+            , spellcheck = False
+            }
+
+    else
+        Element.none
