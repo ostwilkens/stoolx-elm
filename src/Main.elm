@@ -63,7 +63,7 @@ view model =
                  , Events.onMouseUp Release
                  , Events.onMouseDown StartPan
                  , Events.onDoubleClick Deselect
-                 , Element.behindContent (shaderEl model.time)
+                 , Element.behindContent (shaderEl model)
                  , inFront (codeEl model.nodes)
                  ]
                     ++ map inFront (map (nodeEl model.center) model.nodes)

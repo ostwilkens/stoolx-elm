@@ -11,13 +11,12 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Html
 import Html.Attributes
 import List exposing (any, filter, head, map, range)
 import Model exposing (Model, Msg(..))
 import Node exposing (Node, getSelectedCode, inputCount, outputCount, previewCode)
-import Shader exposing (fragmentShader, mesh, vertexShader)
 import Vec2 exposing (Vec2)
-import WebGL
 
 
 nodeEl : Vec2 -> Node -> Element Msg
@@ -67,16 +66,52 @@ socketEl socket =
         Element.none
 
 
-shaderEl : Float -> Element Msg
-shaderEl time =
+shaderEl : Model -> Element Msg
+shaderEl model =
     Element.html
-        (WebGL.toHtml
-            [ Html.Attributes.style "height" "100%"
-            , Html.Attributes.style "width" "100%"
+        (Html.canvas
+            [ Html.Attributes.style "background" "black"
+            , Html.Attributes.style "height" "100%"
+            , Html.Attributes.attribute "class" "glslCanvas"
+            , Html.Attributes.attribute "data-fragment" (fragmentShader model)
             ]
-            [ WebGL.entity vertexShader fragmentShader mesh { time = time / 1000 }
-            ]
+            []
         )
+
+
+fragmentShader : Model -> String
+fragmentShader model =
+    let
+        maybeNode =
+            head model.nodes
+
+        code =
+            case maybeNode of
+                Just node ->
+                    node.code
+
+                Nothing ->
+                    ""
+    in
+    """
+    precision mediump float;
+
+    #define PI 3.1415926535
+    #define HALF_PI 1.57079632679
+
+    uniform vec2 u_resolution;
+    uniform float u_time;
+
+    void main(){
+        vec2 st = gl_FragCoord.xy/u_resolution.xy;
+
+        vec3 color = vec3(0.5) + sin(u_time * 1.0) * 0.05;"""
+        ++ code
+        ++ """
+        color.y += sin(u_time);
+
+        gl_FragColor = vec4(color, 1.0);
+    }"""
 
 
 canvasEl : Model -> Element Msg
