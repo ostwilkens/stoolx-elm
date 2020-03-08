@@ -404,6 +404,10 @@ codeEl nodes =
 
 view : Model -> Html Msg
 view model =
+    let
+        center =
+            Vec2.half model.windowSize
+    in
     Element.layout [] <|
         row [ height fill, width fill ]
             [ el
@@ -415,7 +419,7 @@ view model =
                  , Element.behindContent (shaderEl model.time)
                  , inFront (codeEl model.nodes)
                  ]
-                    ++ map inFront (map nodeEl model.nodes)
+                    ++ map inFront (map (nodeEl center) model.nodes)
                     ++ [ inFront (canvasEl model) ]
                 )
                 menuEl
@@ -469,18 +473,18 @@ nodeBorderColor node =
         Border.color black
 
 
-nodeEl : Node -> Element Msg
-nodeEl node =
+nodeEl : Vec2 -> Node -> Element Msg
+nodeEl center node =
     el
-        [ moveRight node.pos.x
-        , moveDown node.pos.y
+        [ moveRight (node.pos.x + center.x - (toFloat Node.width / 2))
+        , moveDown (node.pos.y + center.y - (toFloat Node.height / 2))
         ]
         (column
             [ Background.color gray
             , nodeBorderColor node
             , nodeBorderWidth node
-            , width (px 100)
-            , height (px 100)
+            , width (px Node.width)
+            , height (px Node.height)
             , spacing 20
             , Events.onMouseDown (Select node)
             , Font.size 10
@@ -569,6 +573,9 @@ socketPos model socket =
     let
         node =
             head (filter (\n -> n.id == getId socket) model.nodes)
+
+        center =
+            Vec2.half model.windowSize
     in
     case node of
         Just justNode ->
@@ -582,10 +589,10 @@ socketPos model socket =
                             inputCount justNode
 
                 offsetX =
-                    socketIndexOffsetX (getIndex socket) count
+                    socketIndexOffsetX (getIndex socket) count + center.x - toFloat Node.width / 2
 
                 offsetY =
-                    socketTypeOffsetY socket
+                    socketTypeOffsetY socket + center.y - toFloat Node.height / 2
             in
             Vec2 (justNode.pos.x + offsetX) (justNode.pos.y + offsetY)
 

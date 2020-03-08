@@ -8279,6 +8279,9 @@ var $author$project$Connection$getIndex = function (socket) {
 		return index;
 	}
 };
+var $author$project$Vec2$half = function (v) {
+	return A2($author$project$Vec2$Vec2, v.x / 2, v.y / 2);
+};
 var $elm$core$List$head = function (list) {
 	if (list.b) {
 		var x = list.a;
@@ -8288,6 +8291,7 @@ var $elm$core$List$head = function (list) {
 		return $elm$core$Maybe$Nothing;
 	}
 };
+var $author$project$Node$height = 100;
 var $author$project$Node$inputCount = function (node) {
 	return $elm$core$List$length(
 		A2($elm$core$String$split, '__', node.code)) - 1;
@@ -8325,6 +8329,7 @@ var $author$project$Main$socketTypeOffsetY = function (socket) {
 		return 13;
 	}
 };
+var $author$project$Node$width = 100;
 var $author$project$Main$socketPos = F2(
 	function (model, socket) {
 		var node = $elm$core$List$head(
@@ -8336,9 +8341,10 @@ var $author$project$Main$socketPos = F2(
 						$author$project$Connection$getId(socket));
 				},
 				model.nodes));
+		var center = $author$project$Vec2$half(model.windowSize);
 		if (node.$ === 'Just') {
 			var justNode = node.a;
-			var offsetY = $author$project$Main$socketTypeOffsetY(socket);
+			var offsetY = ($author$project$Main$socketTypeOffsetY(socket) + center.y) - ($author$project$Node$height / 2);
 			var count = function () {
 				if (socket.$ === 'Output') {
 					return $author$project$Node$outputCount(justNode);
@@ -8346,10 +8352,10 @@ var $author$project$Main$socketPos = F2(
 					return $author$project$Node$inputCount(justNode);
 				}
 			}();
-			var offsetX = A2(
+			var offsetX = (A2(
 				$author$project$Main$socketIndexOffsetX,
 				$author$project$Connection$getIndex(socket),
-				count);
+				count) + center.x) - ($author$project$Node$width / 2);
 			return A2($author$project$Vec2$Vec2, justNode.pos.x + offsetX, justNode.pos.y + offsetY);
 		} else {
 			return A2($author$project$Vec2$Vec2, 0, 0);
@@ -16182,43 +16188,44 @@ var $author$project$Main$outputsEl = F2(
 				},
 				A2($elm$core$List$range, 0, count - 1)));
 	});
-var $author$project$Main$nodeEl = function (node) {
-	return A2(
-		$mdgriffith$elm_ui$Element$el,
-		_List_fromArray(
-			[
-				$mdgriffith$elm_ui$Element$moveRight(node.pos.x),
-				$mdgriffith$elm_ui$Element$moveDown(node.pos.y)
-			]),
-		A2(
-			$mdgriffith$elm_ui$Element$column,
+var $author$project$Main$nodeEl = F2(
+	function (center, node) {
+		return A2(
+			$mdgriffith$elm_ui$Element$el,
 			_List_fromArray(
 				[
-					$mdgriffith$elm_ui$Element$Background$color($author$project$Main$gray),
-					$author$project$Main$nodeBorderColor(node),
-					$author$project$Main$nodeBorderWidth(node),
-					$mdgriffith$elm_ui$Element$width(
-					$mdgriffith$elm_ui$Element$px(100)),
-					$mdgriffith$elm_ui$Element$height(
-					$mdgriffith$elm_ui$Element$px(100)),
-					$mdgriffith$elm_ui$Element$spacing(20),
-					$mdgriffith$elm_ui$Element$Events$onMouseDown(
-					$author$project$Model$Select(node)),
-					$mdgriffith$elm_ui$Element$Font$size(10)
+					$mdgriffith$elm_ui$Element$moveRight((node.pos.x + center.x) - ($author$project$Node$width / 2)),
+					$mdgriffith$elm_ui$Element$moveDown((node.pos.y + center.y) - ($author$project$Node$height / 2))
 				]),
-			_List_fromArray(
-				[
-					A2(
-					$author$project$Main$outputsEl,
-					node.id,
-					$author$project$Node$outputCount(node)),
-					$author$project$Main$codePreviewEl(node),
-					A2(
-					$author$project$Main$inputsEl,
-					node.id,
-					$author$project$Node$inputCount(node))
-				])));
-};
+			A2(
+				$mdgriffith$elm_ui$Element$column,
+				_List_fromArray(
+					[
+						$mdgriffith$elm_ui$Element$Background$color($author$project$Main$gray),
+						$author$project$Main$nodeBorderColor(node),
+						$author$project$Main$nodeBorderWidth(node),
+						$mdgriffith$elm_ui$Element$width(
+						$mdgriffith$elm_ui$Element$px($author$project$Node$width)),
+						$mdgriffith$elm_ui$Element$height(
+						$mdgriffith$elm_ui$Element$px($author$project$Node$height)),
+						$mdgriffith$elm_ui$Element$spacing(20),
+						$mdgriffith$elm_ui$Element$Events$onMouseDown(
+						$author$project$Model$Select(node)),
+						$mdgriffith$elm_ui$Element$Font$size(10)
+					]),
+				_List_fromArray(
+					[
+						A2(
+						$author$project$Main$outputsEl,
+						node.id,
+						$author$project$Node$outputCount(node)),
+						$author$project$Main$codePreviewEl(node),
+						A2(
+						$author$project$Main$inputsEl,
+						node.id,
+						$author$project$Node$inputCount(node))
+					])));
+	});
 var $elm$html$Html$Events$onDoubleClick = function (msg) {
 	return A2(
 		$elm$html$Html$Events$on,
@@ -16488,6 +16495,7 @@ var $author$project$Main$shaderEl = function (time) {
 				])));
 };
 var $author$project$Main$view = function (model) {
+	var center = $author$project$Vec2$half(model.windowSize);
 	return A2(
 		$mdgriffith$elm_ui$Element$layout,
 		_List_Nil,
@@ -16521,7 +16529,10 @@ var $author$project$Main$view = function (model) {
 							A2(
 								$elm$core$List$map,
 								$mdgriffith$elm_ui$Element$inFront,
-								A2($elm$core$List$map, $author$project$Main$nodeEl, model.nodes)),
+								A2(
+									$elm$core$List$map,
+									$author$project$Main$nodeEl(center),
+									model.nodes)),
 							_List_fromArray(
 								[
 									$mdgriffith$elm_ui$Element$inFront(

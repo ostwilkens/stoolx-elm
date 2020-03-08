@@ -1,4 +1,4 @@
-module Node exposing (Node, decoder, encode, init, inputCount, outputCount, previewCode, selected, setCode)
+module Node exposing (Node, decoder, encode, height, init, inputCount, outputCount, previewCode, selected, setCode, width)
 
 import Json.Decode as Decode exposing (Decoder, int, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -14,6 +14,16 @@ type alias Node =
     , code : String
     , id : Int
     }
+
+
+width : Int
+width =
+    100
+
+
+height : Int
+height =
+    100
 
 
 encode : Node -> Encode.Value
