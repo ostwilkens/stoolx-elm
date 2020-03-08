@@ -7,7 +7,6 @@ import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 import List exposing (filter)
 import Node exposing (Node)
-import Task
 import Vec2 exposing (Vec2)
 
 

@@ -1,9 +1,9 @@
-module Connection exposing (Connection, Socket(..), decoder, encode, getId, getIndex, removePreviousConnection, connectionHasNoNode)
+module Connection exposing (Connection, Socket(..), connectionHasNoNode, decoder, encode, getId, getIndex, removePreviousConnection)
 
 import Json.Decode as Decode exposing (Decoder, int)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
-import List exposing (filter, any)
+import List exposing (any, filter)
 import Node exposing (Node)
 
 

@@ -8248,7 +8248,7 @@ var $joakin$elm_canvas$Canvas$Settings$stroke = function (color) {
 	return $joakin$elm_canvas$Canvas$Internal$Canvas$SettingDrawOp(
 		$joakin$elm_canvas$Canvas$Internal$Canvas$Stroke(color));
 };
-var $author$project$Main$line = F2(
+var $author$project$Elements$line = F2(
 	function (a, b) {
 		return A2(
 			$joakin$elm_canvas$Canvas$shapes,
@@ -8318,11 +8318,11 @@ var $author$project$Node$outputCount = function (node) {
 			return 0;
 	}
 };
-var $author$project$Main$socketIndexOffsetX = F2(
+var $author$project$Elements$socketIndexOffsetX = F2(
 	function (index, count) {
 		return ((50 + 15) + (index * 30)) - (count * 15);
 	});
-var $author$project$Main$socketTypeOffsetY = function (socket) {
+var $author$project$Elements$socketTypeOffsetY = function (socket) {
 	if (socket.$ === 'Input') {
 		return 87;
 	} else {
@@ -8330,7 +8330,7 @@ var $author$project$Main$socketTypeOffsetY = function (socket) {
 	}
 };
 var $author$project$Node$width = 100;
-var $author$project$Main$socketPos = F2(
+var $author$project$Elements$socketPos = F2(
 	function (model, socket) {
 		var node = $elm$core$List$head(
 			A2(
@@ -8344,7 +8344,7 @@ var $author$project$Main$socketPos = F2(
 		var center = $author$project$Vec2$half(model.windowSize);
 		if (node.$ === 'Just') {
 			var justNode = node.a;
-			var offsetY = ($author$project$Main$socketTypeOffsetY(socket) + center.y) - ($author$project$Node$height / 2);
+			var offsetY = ($author$project$Elements$socketTypeOffsetY(socket) + center.y) - ($author$project$Node$height / 2);
 			var count = function () {
 				if (socket.$ === 'Output') {
 					return $author$project$Node$outputCount(justNode);
@@ -8353,7 +8353,7 @@ var $author$project$Main$socketPos = F2(
 				}
 			}();
 			var offsetX = (A2(
-				$author$project$Main$socketIndexOffsetX,
+				$author$project$Elements$socketIndexOffsetX,
 				$author$project$Connection$getIndex(socket),
 				count) + center.x) - ($author$project$Node$width / 2);
 			return A2($author$project$Vec2$Vec2, justNode.pos.x + offsetX, justNode.pos.y + offsetY);
@@ -8361,29 +8361,29 @@ var $author$project$Main$socketPos = F2(
 			return A2($author$project$Vec2$Vec2, 0, 0);
 		}
 	});
-var $author$project$Main$connectedLine = F2(
+var $author$project$Elements$connectedLine = F2(
 	function (model, connection) {
 		return A2(
-			$author$project$Main$line,
-			A2($author$project$Main$socketPos, model, connection.input),
-			A2($author$project$Main$socketPos, model, connection.output));
+			$author$project$Elements$line,
+			A2($author$project$Elements$socketPos, model, connection.input),
+			A2($author$project$Elements$socketPos, model, connection.output));
 	});
-var $author$project$Main$connectedLines = function (model) {
+var $author$project$Elements$connectedLines = function (model) {
 	return A2(
 		$elm$core$List$map,
-		$author$project$Main$connectedLine(model),
+		$author$project$Elements$connectedLine(model),
 		model.connections);
 };
-var $author$project$Main$connectingLine = function (model) {
+var $author$project$Elements$connectingLine = function (model) {
 	var _v0 = model.connectingSocket;
 	if (_v0.$ === 'Just') {
 		var socket = _v0.a;
 		return A2(
-			$author$project$Main$line,
-			A2($author$project$Main$socketPos, model, socket),
+			$author$project$Elements$line,
+			A2($author$project$Elements$socketPos, model, socket),
 			model.lastCursorPos);
 	} else {
-		return A2($author$project$Main$line, $author$project$Vec2$zero, $author$project$Vec2$zero);
+		return A2($author$project$Elements$line, $author$project$Vec2$zero, $author$project$Vec2$zero);
 	}
 };
 var $mdgriffith$elm_ui$Internal$Model$Unstyled = function (a) {
@@ -9117,7 +9117,7 @@ var $joakin$elm_canvas$Canvas$toHtml = F3(
 			attrs,
 			entities);
 	});
-var $author$project$Main$canvasEl = function (model) {
+var $author$project$Elements$canvasEl = function (model) {
 	var width = model.windowSize.x;
 	var height = model.windowSize.y;
 	return $mdgriffith$elm_ui$Element$html(
@@ -9138,9 +9138,9 @@ var $author$project$Main$canvasEl = function (model) {
 						_Utils_Tuple2(0, 0),
 						width,
 						height),
-						$author$project$Main$connectingLine(model)
+						$author$project$Elements$connectingLine(model)
 					]),
-				$author$project$Main$connectedLines(model))));
+				$author$project$Elements$connectedLines(model))));
 };
 var $author$project$Main$clientPos = function (event) {
 	var _v0 = event.clientPos;
@@ -9162,7 +9162,7 @@ var $mdgriffith$elm_ui$Internal$Model$Typeface = function (a) {
 	return {$: 'Typeface', a: a};
 };
 var $mdgriffith$elm_ui$Element$Font$typeface = $mdgriffith$elm_ui$Internal$Model$Typeface;
-var $author$project$Main$codeFont = _List_fromArray(
+var $author$project$Elements$codeFont = _List_fromArray(
 	[
 		$mdgriffith$elm_ui$Element$Font$typeface('Courier New'),
 		$mdgriffith$elm_ui$Element$Font$sansSerif
@@ -15576,7 +15576,7 @@ var $mdgriffith$elm_ui$Element$Font$size = function (i) {
 		$mdgriffith$elm_ui$Internal$Flag$fontSize,
 		$mdgriffith$elm_ui$Internal$Model$FontSize(i));
 };
-var $author$project$Main$white = A3($mdgriffith$elm_ui$Element$rgb, 1, 1, 1);
+var $author$project$Elements$white = A3($mdgriffith$elm_ui$Element$rgb, 1, 1, 1);
 var $author$project$Main$codeEl = function (nodes) {
 	return A2(
 		$elm$core$List$any,
@@ -15592,9 +15592,9 @@ var $author$project$Main$codeEl = function (nodes) {
 				$mdgriffith$elm_ui$Element$px(100)),
 				$mdgriffith$elm_ui$Element$Background$color(
 				A4($mdgriffith$elm_ui$Element$rgba, 0.3, 0.3, 0.3, 0.5)),
-				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$white),
+				$mdgriffith$elm_ui$Element$Font$color($author$project$Elements$white),
 				$mdgriffith$elm_ui$Element$Font$size(14),
-				$mdgriffith$elm_ui$Element$Font$family($author$project$Main$codeFont),
+				$mdgriffith$elm_ui$Element$Font$family($author$project$Elements$codeFont),
 				$mdgriffith$elm_ui$Element$alignRight
 			]),
 		{
@@ -15916,12 +15916,12 @@ var $mdgriffith$elm_ui$Element$Input$button = F2(
 				_List_fromArray(
 					[label])));
 	});
-var $author$project$Main$red = A3($mdgriffith$elm_ui$Element$rgb, 0.8, 0.1, 0.1);
-var $author$project$Main$addButton = A2(
+var $author$project$Elements$red = A3($mdgriffith$elm_ui$Element$rgb, 0.8, 0.1, 0.1);
+var $author$project$Elements$addButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_fromArray(
 		[
-			$mdgriffith$elm_ui$Element$Background$color($author$project$Main$red),
+			$mdgriffith$elm_ui$Element$Background$color($author$project$Elements$red),
 			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
 		]),
 	{
@@ -15933,20 +15933,20 @@ var $mdgriffith$elm_ui$Internal$Model$AlignY = function (a) {
 };
 var $mdgriffith$elm_ui$Internal$Model$Bottom = {$: 'Bottom'};
 var $mdgriffith$elm_ui$Element$alignBottom = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Bottom);
-var $author$project$Main$black = A3($mdgriffith$elm_ui$Element$rgb, 0, 0, 0);
+var $author$project$Elements$black = A3($mdgriffith$elm_ui$Element$rgb, 0, 0, 0);
 var $mdgriffith$elm_ui$Internal$Model$CenterX = {$: 'CenterX'};
 var $mdgriffith$elm_ui$Element$centerX = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$CenterX);
-var $author$project$Main$narrowFont = _List_fromArray(
+var $author$project$Elements$narrowFont = _List_fromArray(
 	[
 		$mdgriffith$elm_ui$Element$Font$typeface('Arial Narrow'),
 		$mdgriffith$elm_ui$Element$Font$sansSerif
 	]);
 var $author$project$Model$Remove = {$: 'Remove'};
-var $author$project$Main$removeButton = A2(
+var $author$project$Elements$removeButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_fromArray(
 		[
-			$mdgriffith$elm_ui$Element$Background$color($author$project$Main$red),
+			$mdgriffith$elm_ui$Element$Background$color($author$project$Elements$red),
 			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
 		]),
 	{
@@ -15972,30 +15972,30 @@ var $mdgriffith$elm_ui$Element$row = F2(
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
 var $author$project$Model$Save = {$: 'Save'};
-var $author$project$Main$saveButton = A2(
+var $author$project$Elements$saveButton = A2(
 	$mdgriffith$elm_ui$Element$Input$button,
 	_List_fromArray(
 		[
-			$mdgriffith$elm_ui$Element$Background$color($author$project$Main$red),
+			$mdgriffith$elm_ui$Element$Background$color($author$project$Elements$red),
 			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
 		]),
 	{
 		label: $mdgriffith$elm_ui$Element$text('save'),
 		onPress: $elm$core$Maybe$Just($author$project$Model$Save)
 	});
-var $author$project$Main$menuEl = A2(
+var $author$project$Elements$menuEl = A2(
 	$mdgriffith$elm_ui$Element$row,
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$alignBottom,
 			$mdgriffith$elm_ui$Element$centerX,
 			$mdgriffith$elm_ui$Element$spacing(5),
-			$mdgriffith$elm_ui$Element$Font$family($author$project$Main$narrowFont),
+			$mdgriffith$elm_ui$Element$Font$family($author$project$Elements$narrowFont),
 			$mdgriffith$elm_ui$Element$Font$size(18),
-			$mdgriffith$elm_ui$Element$Font$color($author$project$Main$black)
+			$mdgriffith$elm_ui$Element$Font$color($author$project$Elements$black)
 		]),
 	_List_fromArray(
-		[$author$project$Main$addButton, $author$project$Main$removeButton, $author$project$Main$saveButton]));
+		[$author$project$Elements$addButton, $author$project$Elements$removeButton, $author$project$Elements$saveButton]));
 var $author$project$Model$Select = function (a) {
 	return {$: 'Select', a: a};
 };
@@ -16057,7 +16057,7 @@ var $author$project$Node$previewCode = function (node) {
 													'',
 													A3($elm$core$String$replace, 'float', '', node.code)))))))))))));
 };
-var $author$project$Main$codePreviewEl = function (node) {
+var $author$project$Elements$codePreviewEl = function (node) {
 	return A2(
 		$mdgriffith$elm_ui$Element$el,
 		_List_fromArray(
@@ -16065,8 +16065,8 @@ var $author$project$Main$codePreviewEl = function (node) {
 				$mdgriffith$elm_ui$Element$centerX,
 				$mdgriffith$elm_ui$Element$centerY,
 				$mdgriffith$elm_ui$Element$Font$size(12),
-				$mdgriffith$elm_ui$Element$Font$color($author$project$Main$white),
-				$mdgriffith$elm_ui$Element$Font$family($author$project$Main$narrowFont)
+				$mdgriffith$elm_ui$Element$Font$color($author$project$Elements$white),
+				$mdgriffith$elm_ui$Element$Font$family($author$project$Elements$narrowFont)
 			]),
 		$mdgriffith$elm_ui$Element$text(
 			$author$project$Node$previewCode(node)));
@@ -16089,7 +16089,7 @@ var $mdgriffith$elm_ui$Element$column = F2(
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
 	});
-var $author$project$Main$gray = A3($mdgriffith$elm_ui$Element$rgb, 0.3, 0.3, 0.3);
+var $author$project$Elements$gray = A3($mdgriffith$elm_ui$Element$rgb, 0.3, 0.3, 0.3);
 var $author$project$Model$Connect = function (a) {
 	return {$: 'Connect', a: a};
 };
@@ -16110,7 +16110,7 @@ var $elm$html$Html$Events$onMouseUp = function (msg) {
 		$elm$json$Json$Decode$succeed(msg));
 };
 var $mdgriffith$elm_ui$Element$Events$onMouseUp = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Attr, $elm$html$Html$Events$onMouseUp);
-var $author$project$Main$socketEl = function (socket) {
+var $author$project$Elements$socketEl = function (socket) {
 	return A2(
 		$mdgriffith$elm_ui$Element$el,
 		_List_fromArray(
@@ -16128,7 +16128,7 @@ var $author$project$Main$socketEl = function (socket) {
 			]),
 		$mdgriffith$elm_ui$Element$none);
 };
-var $author$project$Main$inputsEl = F2(
+var $author$project$Elements$inputsEl = F2(
 	function (id, count) {
 		return A2(
 			$mdgriffith$elm_ui$Element$row,
@@ -16141,7 +16141,7 @@ var $author$project$Main$inputsEl = F2(
 			A2(
 				$elm$core$List$map,
 				function (i) {
-					return $author$project$Main$socketEl(
+					return $author$project$Elements$socketEl(
 						A2($author$project$Connection$Input, id, i));
 				},
 				A2($elm$core$List$range, 0, count - 1)));
@@ -16162,15 +16162,15 @@ var $mdgriffith$elm_ui$Element$moveRight = function (x) {
 		$mdgriffith$elm_ui$Internal$Flag$moveX,
 		$mdgriffith$elm_ui$Internal$Model$MoveX(x));
 };
-var $author$project$Main$nodeBorderColor = function (node) {
-	return node.selected ? $mdgriffith$elm_ui$Element$Border$color($author$project$Main$red) : $mdgriffith$elm_ui$Element$Border$color($author$project$Main$black);
+var $author$project$Elements$nodeBorderColor = function (node) {
+	return node.selected ? $mdgriffith$elm_ui$Element$Border$color($author$project$Elements$red) : $mdgriffith$elm_ui$Element$Border$color($author$project$Elements$black);
 };
-var $author$project$Main$nodeBorderWidth = function (node) {
+var $author$project$Elements$nodeBorderWidth = function (node) {
 	return node.selected ? $mdgriffith$elm_ui$Element$Border$width(3) : $mdgriffith$elm_ui$Element$Border$width(1);
 };
 var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
 var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
-var $author$project$Main$outputsEl = F2(
+var $author$project$Elements$outputsEl = F2(
 	function (id, count) {
 		return A2(
 			$mdgriffith$elm_ui$Element$row,
@@ -16183,12 +16183,12 @@ var $author$project$Main$outputsEl = F2(
 			A2(
 				$elm$core$List$map,
 				function (i) {
-					return $author$project$Main$socketEl(
+					return $author$project$Elements$socketEl(
 						A2($author$project$Connection$Output, id, i));
 				},
 				A2($elm$core$List$range, 0, count - 1)));
 	});
-var $author$project$Main$nodeEl = F2(
+var $author$project$Elements$nodeEl = F2(
 	function (center, node) {
 		return A2(
 			$mdgriffith$elm_ui$Element$el,
@@ -16201,9 +16201,9 @@ var $author$project$Main$nodeEl = F2(
 				$mdgriffith$elm_ui$Element$column,
 				_List_fromArray(
 					[
-						$mdgriffith$elm_ui$Element$Background$color($author$project$Main$gray),
-						$author$project$Main$nodeBorderColor(node),
-						$author$project$Main$nodeBorderWidth(node),
+						$mdgriffith$elm_ui$Element$Background$color($author$project$Elements$gray),
+						$author$project$Elements$nodeBorderColor(node),
+						$author$project$Elements$nodeBorderWidth(node),
 						$mdgriffith$elm_ui$Element$width(
 						$mdgriffith$elm_ui$Element$px($author$project$Node$width)),
 						$mdgriffith$elm_ui$Element$height(
@@ -16216,12 +16216,12 @@ var $author$project$Main$nodeEl = F2(
 				_List_fromArray(
 					[
 						A2(
-						$author$project$Main$outputsEl,
+						$author$project$Elements$outputsEl,
 						node.id,
 						$author$project$Node$outputCount(node)),
-						$author$project$Main$codePreviewEl(node),
+						$author$project$Elements$codePreviewEl(node),
 						A2(
-						$author$project$Main$inputsEl,
+						$author$project$Elements$inputsEl,
 						node.id,
 						$author$project$Node$inputCount(node))
 					])));
@@ -16475,7 +16475,7 @@ var $author$project$Shader$vertexShader = {
 	attributes: {position: 'position'},
 	uniforms: {}
 };
-var $author$project$Main$shaderEl = function (time) {
+var $author$project$Elements$shaderEl = function (time) {
 	return $mdgriffith$elm_ui$Element$html(
 		A2(
 			$elm_explorations$webgl$WebGL$toHtml,
@@ -16521,7 +16521,7 @@ var $author$project$Main$view = function (model) {
 								$mdgriffith$elm_ui$Element$Events$onMouseUp($author$project$Model$Release),
 								$mdgriffith$elm_ui$Element$Events$onDoubleClick($author$project$Model$Deselect),
 								$mdgriffith$elm_ui$Element$behindContent(
-								$author$project$Main$shaderEl(model.time)),
+								$author$project$Elements$shaderEl(model.time)),
 								$mdgriffith$elm_ui$Element$inFront(
 								$author$project$Main$codeEl(model.nodes))
 							]),
@@ -16531,14 +16531,14 @@ var $author$project$Main$view = function (model) {
 								$mdgriffith$elm_ui$Element$inFront,
 								A2(
 									$elm$core$List$map,
-									$author$project$Main$nodeEl(center),
+									$author$project$Elements$nodeEl(center),
 									model.nodes)),
 							_List_fromArray(
 								[
 									$mdgriffith$elm_ui$Element$inFront(
-									$author$project$Main$canvasEl(model))
+									$author$project$Elements$canvasEl(model))
 								]))),
-					$author$project$Main$menuEl),
+					$author$project$Elements$menuEl),
 					$mdgriffith$elm_ui$Element$none
 				])));
 };

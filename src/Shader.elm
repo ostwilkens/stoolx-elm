@@ -1,7 +1,7 @@
 module Shader exposing (fragmentShader, mesh, vertexShader)
 
 import Math.Vector2 as Vector2
-import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Math.Vector3 exposing (Vec3, vec3)
 import WebGL
 
 
