@@ -42,9 +42,9 @@ init flags =
     ( { nodes = savedModel.nodes
       , connections = savedModel.connections
       , dragging = False
-      , lastCursorPos = Vec2 0 0
+      , lastCursorPos = Vec2.zero
       , time = 0
-      , windowSize = ( 0, 0 )
+      , windowSize = Vec2.zero
       , connectingSocket = Nothing
       }
     , Task.perform InitWindowSize Browser.Dom.getViewport
@@ -65,7 +65,7 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ Browser.Events.onAnimationFrameDelta UpdateTime
-        , Browser.Events.onResize (\w h -> ResizeWindow ( toFloat w, toFloat h ))
+        , Browser.Events.onResize (\w h -> ResizeWindow (Vec2 (toFloat w) (toFloat h)))
         ]
 
 
@@ -154,13 +154,13 @@ update msg model =
             , Cmd.none
             )
 
-        ResizeWindow ( width, height ) ->
-            ( { model | windowSize = ( width, height ) }
+        ResizeWindow vec2 ->
+            ( { model | windowSize = vec2 }
             , Cmd.none
             )
 
         InitWindowSize viewport ->
-            ( { model | windowSize = ( viewport.viewport.width, viewport.viewport.height ) }
+            ( { model | windowSize = Vec2 viewport.viewport.width viewport.viewport.height }
             , Cmd.none
             )
 
@@ -532,10 +532,10 @@ canvasEl : Model -> Element Msg
 canvasEl model =
     let
         width =
-            Tuple.first model.windowSize
+            model.windowSize.x
 
         height =
-            Tuple.second model.windowSize
+            model.windowSize.y
     in
     Element.html
         (Canvas.toHtml ( floor width, floor height )
@@ -564,7 +564,7 @@ socketTypeOffsetY socket =
             13
 
 
-socketPos : Model -> Socket -> ( Float, Float )
+socketPos : Model -> Socket -> Vec2
 socketPos model socket =
     let
         node =
@@ -587,31 +587,20 @@ socketPos model socket =
                 offsetY =
                     socketTypeOffsetY socket
             in
-            ( justNode.pos.x + offsetX, justNode.pos.y + offsetY )
+            Vec2 (justNode.pos.x + offsetX) (justNode.pos.y + offsetY)
 
         Nothing ->
-            ( 0, 0 )
+            Vec2 0 0
 
 
 connectingLine : Model -> Canvas.Renderable
 connectingLine model =
-    if connecting model then
-        let
-            a =
-                case model.connectingSocket of
-                    Just socket ->
-                        socketPos model socket
+    case model.connectingSocket of
+        Just socket ->
+            line (socketPos model socket) model.lastCursorPos
 
-                    Nothing ->
-                        ( 100, 0 )
-
-            b =
-                ( model.lastCursorPos.x, model.lastCursorPos.y )
-        in
-        line a b
-
-    else
-        line ( 0, 0 ) ( 0, 0 )
+        Nothing ->
+            line Vec2.zero Vec2.zero
 
 
 connectedLine : Model -> Connection -> Canvas.Renderable
@@ -624,13 +613,13 @@ connectedLines model =
     map (connectedLine model) model.connections
 
 
-line : ( Float, Float ) -> ( Float, Float ) -> Canvas.Renderable
-line ( ax, ay ) ( bx, by ) =
+line : Vec2 -> Vec2 -> Canvas.Renderable
+line a b =
     Canvas.shapes
         [ Canvas.Settings.stroke (Color.rgba 0 1 0 0.7)
         , Canvas.Settings.Line.lineWidth 5
         ]
-        [ Canvas.path ( ax, ay )
-            [ Canvas.lineTo ( bx, by )
+        [ Canvas.path ( a.x, a.y )
+            [ Canvas.lineTo ( b.x, b.y )
             ]
         ]

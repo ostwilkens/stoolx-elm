@@ -1,4 +1,4 @@
-module Vec2 exposing (Vec2, add, decoder, encode, sub)
+module Vec2 exposing (Vec2, add, decoder, encode, sub, zero)
 
 import Json.Decode as Decode exposing (Decoder, float)
 import Json.Decode.Pipeline exposing (required)
@@ -34,3 +34,7 @@ encode vec2 =
         [ ( "x", Encode.float vec2.x )
         , ( "y", Encode.float vec2.y )
         ]
+
+zero : Vec2
+zero =
+    Vec2 0 0 

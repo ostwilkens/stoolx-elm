@@ -17,7 +17,7 @@ type alias Model =
     , dragging : Bool
     , lastCursorPos : Vec2
     , time : Float
-    , windowSize : ( Float, Float )
+    , windowSize : Vec2
     , connectingSocket : Maybe Socket
     }
 
@@ -49,7 +49,7 @@ type Msg
     | SetCode String
     | UpdateTime Float
     | StartConnect Socket
-    | ResizeWindow ( Float, Float )
+    | ResizeWindow Vec2
     | InitWindowSize Browser.Dom.Viewport
     | Connect Socket
 

@@ -6840,10 +6840,6 @@ var $elm$browser$Browser$element = _Browser_element;
 var $author$project$Model$InitWindowSize = function (a) {
 	return {$: 'InitWindowSize', a: a};
 };
-var $author$project$Vec2$Vec2 = F2(
-	function (x, y) {
-		return {x: x, y: y};
-	});
 var $elm$json$Json$Decode$decodeValue = _Json_run;
 var $author$project$Model$SavedModel = F2(
 	function (nodes, connections) {
@@ -6902,6 +6898,10 @@ var $author$project$Node$Node = F4(
 	function (pos, selected, code, id) {
 		return {code: code, id: id, pos: pos, selected: selected};
 	});
+var $author$project$Vec2$Vec2 = F2(
+	function (x, y) {
+		return {x: x, y: y};
+	});
 var $elm$json$Json$Decode$float = _Json_decodeFloat;
 var $author$project$Vec2$decoder = A3(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
@@ -6955,6 +6955,7 @@ var $author$project$Model$decodeStoredModel = function (modelJson) {
 	}
 };
 var $elm$browser$Browser$Dom$getViewport = _Browser_withWindow(_Browser_getViewport);
+var $author$project$Vec2$zero = A2($author$project$Vec2$Vec2, 0, 0);
 var $author$project$Main$init = function (flags) {
 	var savedModel = function () {
 		if (flags.$ === 'Just') {
@@ -6965,15 +6966,7 @@ var $author$project$Main$init = function (flags) {
 		}
 	}();
 	return _Utils_Tuple2(
-		{
-			connectingSocket: $elm$core$Maybe$Nothing,
-			connections: savedModel.connections,
-			dragging: false,
-			lastCursorPos: A2($author$project$Vec2$Vec2, 0, 0),
-			nodes: savedModel.nodes,
-			time: 0,
-			windowSize: _Utils_Tuple2(0, 0)
-		},
+		{connectingSocket: $elm$core$Maybe$Nothing, connections: savedModel.connections, dragging: false, lastCursorPos: $author$project$Vec2$zero, nodes: savedModel.nodes, time: 0, windowSize: $author$project$Vec2$zero},
 		A2($elm$core$Task$perform, $author$project$Model$InitWindowSize, $elm$browser$Browser$Dom$getViewport));
 };
 var $elm$json$Json$Decode$null = _Json_decodeNull;
@@ -7540,7 +7533,7 @@ var $author$project$Main$subscriptions = function (_v0) {
 				F2(
 					function (w, h) {
 						return $author$project$Model$ResizeWindow(
-							_Utils_Tuple2(w, h));
+							A2($author$project$Vec2$Vec2, w, h));
 					}))
 			]));
 };
@@ -7991,15 +7984,11 @@ var $author$project$Main$update = F2(
 						}),
 					$elm$core$Platform$Cmd$none);
 			case 'ResizeWindow':
-				var _v1 = msg.a;
-				var width = _v1.a;
-				var height = _v1.b;
+				var vec2 = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{
-							windowSize: _Utils_Tuple2(width, height)
-						}),
+						{windowSize: vec2}),
 					$elm$core$Platform$Cmd$none);
 			case 'InitWindowSize':
 				var viewport = msg.a;
@@ -8007,14 +7996,14 @@ var $author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{
-							windowSize: _Utils_Tuple2(viewport.viewport.width, viewport.viewport.height)
+							windowSize: A2($author$project$Vec2$Vec2, viewport.viewport.width, viewport.viewport.height)
 						}),
 					$elm$core$Platform$Cmd$none);
 			default:
 				var socket = msg.a;
-				var _v2 = model.connectingSocket;
-				if (_v2.$ === 'Just') {
-					var otherSocket = _v2.a;
+				var _v1 = model.connectingSocket;
+				if (_v1.$ === 'Just') {
+					var otherSocket = _v1.a;
 					var connection = A3($author$project$Main$connectSockets, model, socket, otherSocket);
 					if (connection.$ === 'Just') {
 						var justConnection = connection.a;
@@ -8260,11 +8249,7 @@ var $joakin$elm_canvas$Canvas$Settings$stroke = function (color) {
 		$joakin$elm_canvas$Canvas$Internal$Canvas$Stroke(color));
 };
 var $author$project$Main$line = F2(
-	function (_v0, _v1) {
-		var ax = _v0.a;
-		var ay = _v0.b;
-		var bx = _v1.a;
-		var by = _v1.b;
+	function (a, b) {
 		return A2(
 			$joakin$elm_canvas$Canvas$shapes,
 			_List_fromArray(
@@ -8277,11 +8262,11 @@ var $author$project$Main$line = F2(
 				[
 					A2(
 					$joakin$elm_canvas$Canvas$path,
-					_Utils_Tuple2(ax, ay),
+					_Utils_Tuple2(a.x, a.y),
 					_List_fromArray(
 						[
 							$joakin$elm_canvas$Canvas$lineTo(
-							_Utils_Tuple2(bx, by))
+							_Utils_Tuple2(b.x, b.y))
 						]))
 				]));
 	});
@@ -8365,9 +8350,9 @@ var $author$project$Main$socketPos = F2(
 				$author$project$Main$socketIndexOffsetX,
 				$author$project$Connection$getIndex(socket),
 				count);
-			return _Utils_Tuple2(justNode.pos.x + offsetX, justNode.pos.y + offsetY);
+			return A2($author$project$Vec2$Vec2, justNode.pos.x + offsetX, justNode.pos.y + offsetY);
 		} else {
-			return _Utils_Tuple2(0, 0);
+			return A2($author$project$Vec2$Vec2, 0, 0);
 		}
 	});
 var $author$project$Main$connectedLine = F2(
@@ -8384,23 +8369,15 @@ var $author$project$Main$connectedLines = function (model) {
 		model.connections);
 };
 var $author$project$Main$connectingLine = function (model) {
-	if ($author$project$Model$connecting(model)) {
-		var b = _Utils_Tuple2(model.lastCursorPos.x, model.lastCursorPos.y);
-		var a = function () {
-			var _v0 = model.connectingSocket;
-			if (_v0.$ === 'Just') {
-				var socket = _v0.a;
-				return A2($author$project$Main$socketPos, model, socket);
-			} else {
-				return _Utils_Tuple2(100, 0);
-			}
-		}();
-		return A2($author$project$Main$line, a, b);
-	} else {
+	var _v0 = model.connectingSocket;
+	if (_v0.$ === 'Just') {
+		var socket = _v0.a;
 		return A2(
 			$author$project$Main$line,
-			_Utils_Tuple2(0, 0),
-			_Utils_Tuple2(0, 0));
+			A2($author$project$Main$socketPos, model, socket),
+			model.lastCursorPos);
+	} else {
+		return A2($author$project$Main$line, $author$project$Vec2$zero, $author$project$Vec2$zero);
 	}
 };
 var $mdgriffith$elm_ui$Internal$Model$Unstyled = function (a) {
@@ -8412,10 +8389,6 @@ var $elm$core$Basics$always = F2(
 	});
 var $mdgriffith$elm_ui$Internal$Model$unstyled = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Unstyled, $elm$core$Basics$always);
 var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
-var $elm$core$Tuple$second = function (_v0) {
-	var y = _v0.b;
-	return y;
-};
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
 var $elm$html$Html$Attributes$style = $elm$virtual_dom$VirtualDom$style;
 var $elm$html$Html$canvas = _VirtualDom_node('canvas');
@@ -9139,8 +9112,8 @@ var $joakin$elm_canvas$Canvas$toHtml = F3(
 			entities);
 	});
 var $author$project$Main$canvasEl = function (model) {
-	var width = model.windowSize.a;
-	var height = model.windowSize.b;
+	var width = model.windowSize.x;
+	var height = model.windowSize.y;
 	return $mdgriffith$elm_ui$Element$html(
 		A3(
 			$joakin$elm_canvas$Canvas$toHtml,
@@ -9472,6 +9445,10 @@ var $mdgriffith$elm_ui$Internal$Model$lengthClassName = function (x) {
 			var len = x.b;
 			return 'max' + ($elm$core$String$fromInt(max) + $mdgriffith$elm_ui$Internal$Model$lengthClassName(len));
 	}
+};
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
 };
 var $mdgriffith$elm_ui$Internal$Model$transformClass = function (transform) {
 	switch (transform.$) {
