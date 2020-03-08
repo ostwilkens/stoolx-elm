@@ -35,9 +35,9 @@ nodeEl center node =
             , spacing 20
             , Events.onMouseDown (Select node)
             , Font.size 10
+            , Element.behindContent (codePreviewEl node)
             ]
             [ outputsEl node.id (outputCount node)
-            , codePreviewEl node
             , inputsEl node.id (inputCount node)
             ]
         )
@@ -91,6 +91,7 @@ canvasEl model =
     Element.html
         (Canvas.toHtml ( floor width, floor height )
             [ Html.Attributes.style "pointer-events" "none"
+            , Html.Attributes.style "overflow" "hidden"
             ]
             ([ Canvas.clear ( 0, 0 ) width height
              , connectingLine model
@@ -137,9 +138,6 @@ socketPos model socket =
     let
         node =
             head (filter (\n -> n.id == getId socket) model.nodes)
-
-        center =
-            Vec2.half model.windowSize
     in
     case node of
         Just justNode ->
@@ -153,10 +151,10 @@ socketPos model socket =
                             inputCount justNode
 
                 offsetX =
-                    socketIndexOffsetX (getIndex socket) count + center.x - toFloat Node.width / 2
+                    socketIndexOffsetX (getIndex socket) count + model.center.x - toFloat Node.width / 2
 
                 offsetY =
-                    socketTypeOffsetY socket + center.y - toFloat Node.height / 2
+                    socketTypeOffsetY socket + model.center.y - toFloat Node.height / 2
             in
             Vec2 (justNode.pos.x + offsetX) (justNode.pos.y + offsetY)
 
@@ -212,14 +210,14 @@ nodeBorderColor node =
 
 socketIndexOffsetX : Int -> Int -> Float
 socketIndexOffsetX index count =
-    toFloat (50 + 15 + index * 30 - count * 15)
+    toFloat (floor (toFloat Node.width / 2) + 15 + index * 30 - count * 15)
 
 
 socketTypeOffsetY : Socket -> Float
 socketTypeOffsetY socket =
     case socket of
         Input _ _ ->
-            87
+            toFloat Node.height - 13
 
         Output _ _ ->
             13

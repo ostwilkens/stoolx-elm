@@ -14,11 +14,13 @@ import Vec2 exposing (Vec2)
 type alias Model =
     { nodes : List Node
     , connections : List Connection
-    , dragging : Bool
+    , moving : Bool
     , lastCursorPos : Vec2
     , time : Float
     , windowSize : Vec2
     , connectingSocket : Maybe Socket
+    , center : Vec2
+    , panning : Bool
     }
 
 
@@ -42,7 +44,7 @@ type Msg
     = Select Node
     | Deselect
     | Release
-    | Drag Vec2
+    | Move Vec2
     | Add
     | Remove
     | Save
@@ -52,6 +54,7 @@ type Msg
     | ResizeWindow Vec2
     | InitWindowSize Browser.Dom.Viewport
     | Connect Socket
+    | StartPan
 
 
 encodeModel : Model -> Encode.Value

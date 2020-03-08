@@ -6966,7 +6966,7 @@ var $author$project$Main$init = function (flags) {
 		}
 	}();
 	return _Utils_Tuple2(
-		{connectingSocket: $elm$core$Maybe$Nothing, connections: savedModel.connections, dragging: false, lastCursorPos: $author$project$Vec2$zero, nodes: savedModel.nodes, time: 0, windowSize: $author$project$Vec2$zero},
+		{center: $author$project$Vec2$zero, connectingSocket: $elm$core$Maybe$Nothing, connections: savedModel.connections, lastCursorPos: $author$project$Vec2$zero, moving: false, nodes: savedModel.nodes, panning: false, time: 0, windowSize: $author$project$Vec2$zero},
 		A2($elm$core$Task$perform, $author$project$Model$InitWindowSize, $elm$browser$Browser$Dom$getViewport));
 };
 var $elm$json$Json$Decode$null = _Json_decodeNull;
@@ -7537,6 +7537,10 @@ var $author$project$Main$subscriptions = function (_v0) {
 					}))
 			]));
 };
+var $author$project$Vec2$add = F2(
+	function (a, b) {
+		return A2($author$project$Vec2$Vec2, a.x + b.x, a.y + b.y);
+	});
 var $elm$core$List$any = F2(
 	function (isOkay, list) {
 		any:
@@ -7640,18 +7644,17 @@ var $author$project$Node$deselect = function (node) {
 		node,
 		{selected: false});
 };
+var $author$project$Vec2$half = function (v) {
+	return A2($author$project$Vec2$Vec2, v.x / 2, v.y / 2);
+};
 var $author$project$Node$init = function (id) {
 	return {
 		code: 'x',
 		id: id,
-		pos: A2($author$project$Vec2$Vec2, 200, 300),
+		pos: A2($author$project$Vec2$Vec2, 0, 0),
 		selected: true
 	};
 };
-var $author$project$Vec2$add = F2(
-	function (a, b) {
-		return A2($author$project$Vec2$Vec2, a.x + b.x, a.y + b.y);
-	});
 var $author$project$Node$move = F2(
 	function (offset, node) {
 		return node.selected ? _Utils_update(
@@ -7887,12 +7890,12 @@ var $author$project$Main$update = F2(
 		switch (msg.$) {
 			case 'Select':
 				var node = msg.a;
-				var startDragging = !$author$project$Model$connecting(model);
+				var startMoving = !$author$project$Model$connecting(model);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
-							dragging: startDragging,
+							moving: startMoving,
 							nodes: A2(
 								$elm$core$List$map,
 								$author$project$Node$select(node),
@@ -7911,30 +7914,33 @@ var $author$project$Main$update = F2(
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{connectingSocket: $elm$core$Maybe$Nothing, dragging: false}),
+						{connectingSocket: $elm$core$Maybe$Nothing, moving: false, panning: false}),
 					$elm$core$Platform$Cmd$none);
-			case 'Drag':
+			case 'Move':
 				var pos = msg.a;
-				if (model.dragging) {
-					var delta = A2($author$project$Vec2$sub, pos, model.lastCursorPos);
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{
-								lastCursorPos: pos,
-								nodes: A2(
-									$elm$core$List$map,
-									$author$project$Node$move(delta),
-									model.nodes)
-							}),
-						$elm$core$Platform$Cmd$none);
-				} else {
-					return _Utils_Tuple2(
-						_Utils_update(
-							model,
-							{lastCursorPos: pos}),
-						$elm$core$Platform$Cmd$none);
-				}
+				var delta = A2($author$project$Vec2$sub, pos, model.lastCursorPos);
+				return model.moving ? _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							lastCursorPos: pos,
+							nodes: A2(
+								$elm$core$List$map,
+								$author$project$Node$move(delta),
+								model.nodes)
+						}),
+					$elm$core$Platform$Cmd$none) : (model.panning ? _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							center: A2($author$project$Vec2$add, model.center, delta),
+							lastCursorPos: pos
+						}),
+					$elm$core$Platform$Cmd$none) : _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{lastCursorPos: pos}),
+					$elm$core$Platform$Cmd$none));
 			case 'Add':
 				var id = $author$project$Node$nextId(model.nodes);
 				return _Utils_Tuple2(
@@ -7992,14 +7998,16 @@ var $author$project$Main$update = F2(
 					$elm$core$Platform$Cmd$none);
 			case 'InitWindowSize':
 				var viewport = msg.a;
+				var v = A2($author$project$Vec2$Vec2, viewport.viewport.width, viewport.viewport.height);
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{
-							windowSize: A2($author$project$Vec2$Vec2, viewport.viewport.width, viewport.viewport.height)
+							center: $author$project$Vec2$half(v),
+							windowSize: v
 						}),
 					$elm$core$Platform$Cmd$none);
-			default:
+			case 'Connect':
 				var socket = msg.a;
 				var _v1 = model.connectingSocket;
 				if (_v1.$ === 'Just') {
@@ -8023,14 +8031,23 @@ var $author$project$Main$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							panning: (!$author$project$Model$connecting(model)) && (!model.moving)
+						}),
+					$elm$core$Platform$Cmd$none);
 		}
 	});
 var $elm$json$Json$Decode$value = _Json_decodeValue;
 var $author$project$Model$Deselect = {$: 'Deselect'};
-var $author$project$Model$Drag = function (a) {
-	return {$: 'Drag', a: a};
+var $author$project$Model$Move = function (a) {
+	return {$: 'Move', a: a};
 };
 var $author$project$Model$Release = {$: 'Release'};
+var $author$project$Model$StartPan = {$: 'StartPan'};
 var $mdgriffith$elm_ui$Internal$Model$Behind = {$: 'Behind'};
 var $mdgriffith$elm_ui$Internal$Model$Nearby = F2(
 	function (a, b) {
@@ -8279,9 +8296,6 @@ var $author$project$Connection$getIndex = function (socket) {
 		return index;
 	}
 };
-var $author$project$Vec2$half = function (v) {
-	return A2($author$project$Vec2$Vec2, v.x / 2, v.y / 2);
-};
 var $elm$core$List$head = function (list) {
 	if (list.b) {
 		var x = list.a;
@@ -8318,18 +8332,18 @@ var $author$project$Node$outputCount = function (node) {
 			return 0;
 	}
 };
+var $author$project$Node$width = 100;
 var $author$project$Elements$socketIndexOffsetX = F2(
 	function (index, count) {
-		return ((50 + 15) + (index * 30)) - (count * 15);
+		return (($elm$core$Basics$floor($author$project$Node$width / 2) + 15) + (index * 30)) - (count * 15);
 	});
 var $author$project$Elements$socketTypeOffsetY = function (socket) {
 	if (socket.$ === 'Input') {
-		return 87;
+		return $author$project$Node$height - 13;
 	} else {
 		return 13;
 	}
 };
-var $author$project$Node$width = 100;
 var $author$project$Elements$socketPos = F2(
 	function (model, socket) {
 		var node = $elm$core$List$head(
@@ -8341,10 +8355,9 @@ var $author$project$Elements$socketPos = F2(
 						$author$project$Connection$getId(socket));
 				},
 				model.nodes));
-		var center = $author$project$Vec2$half(model.windowSize);
 		if (node.$ === 'Just') {
 			var justNode = node.a;
-			var offsetY = ($author$project$Elements$socketTypeOffsetY(socket) + center.y) - ($author$project$Node$height / 2);
+			var offsetY = ($author$project$Elements$socketTypeOffsetY(socket) + model.center.y) - ($author$project$Node$height / 2);
 			var count = function () {
 				if (socket.$ === 'Output') {
 					return $author$project$Node$outputCount(justNode);
@@ -8355,7 +8368,7 @@ var $author$project$Elements$socketPos = F2(
 			var offsetX = (A2(
 				$author$project$Elements$socketIndexOffsetX,
 				$author$project$Connection$getIndex(socket),
-				count) + center.x) - ($author$project$Node$width / 2);
+				count) + model.center.x) - ($author$project$Node$width / 2);
 			return A2($author$project$Vec2$Vec2, justNode.pos.x + offsetX, justNode.pos.y + offsetY);
 		} else {
 			return A2($author$project$Vec2$Vec2, 0, 0);
@@ -9128,7 +9141,8 @@ var $author$project$Elements$canvasEl = function (model) {
 				$elm$core$Basics$floor(height)),
 			_List_fromArray(
 				[
-					A2($elm$html$Html$Attributes$style, 'pointer-events', 'none')
+					A2($elm$html$Html$Attributes$style, 'pointer-events', 'none'),
+					A2($elm$html$Html$Attributes$style, 'overflow', 'hidden')
 				]),
 			_Utils_ap(
 				_List_fromArray(
@@ -16211,7 +16225,9 @@ var $author$project$Elements$nodeEl = F2(
 						$mdgriffith$elm_ui$Element$spacing(20),
 						$mdgriffith$elm_ui$Element$Events$onMouseDown(
 						$author$project$Model$Select(node)),
-						$mdgriffith$elm_ui$Element$Font$size(10)
+						$mdgriffith$elm_ui$Element$Font$size(10),
+						$mdgriffith$elm_ui$Element$behindContent(
+						$author$project$Elements$codePreviewEl(node))
 					]),
 				_List_fromArray(
 					[
@@ -16219,7 +16235,6 @@ var $author$project$Elements$nodeEl = F2(
 						$author$project$Elements$outputsEl,
 						node.id,
 						$author$project$Node$outputCount(node)),
-						$author$project$Elements$codePreviewEl(node),
 						A2(
 						$author$project$Elements$inputsEl,
 						node.id,
@@ -16495,7 +16510,6 @@ var $author$project$Elements$shaderEl = function (time) {
 				])));
 };
 var $author$project$Main$view = function (model) {
-	var center = $author$project$Vec2$half(model.windowSize);
 	return A2(
 		$mdgriffith$elm_ui$Element$layout,
 		_List_Nil,
@@ -16517,8 +16531,9 @@ var $author$project$Main$view = function (model) {
 								$mdgriffith$elm_ui$Element$height($mdgriffith$elm_ui$Element$fill),
 								$mdgriffith$elm_ui$Element$htmlAttribute(
 								$mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove(
-									A2($elm$core$Basics$composeR, $author$project$Main$clientPos, $author$project$Model$Drag))),
+									A2($elm$core$Basics$composeR, $author$project$Main$clientPos, $author$project$Model$Move))),
 								$mdgriffith$elm_ui$Element$Events$onMouseUp($author$project$Model$Release),
+								$mdgriffith$elm_ui$Element$Events$onMouseDown($author$project$Model$StartPan),
 								$mdgriffith$elm_ui$Element$Events$onDoubleClick($author$project$Model$Deselect),
 								$mdgriffith$elm_ui$Element$behindContent(
 								$author$project$Elements$shaderEl(model.time)),
@@ -16531,7 +16546,7 @@ var $author$project$Main$view = function (model) {
 								$mdgriffith$elm_ui$Element$inFront,
 								A2(
 									$elm$core$List$map,
-									$author$project$Elements$nodeEl(center),
+									$author$project$Elements$nodeEl(model.center),
 									model.nodes)),
 							_List_fromArray(
 								[

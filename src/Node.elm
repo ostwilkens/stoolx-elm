@@ -89,7 +89,7 @@ inputCount node =
 
 init : Int -> Node
 init id =
-    { pos = Vec2 200 300
+    { pos = Vec2 0 0
     , selected = True
     , code = "x"
     , id = id

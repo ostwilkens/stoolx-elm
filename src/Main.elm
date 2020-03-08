@@ -40,11 +40,13 @@ init flags =
     in
     ( { nodes = savedModel.nodes
       , connections = savedModel.connections
-      , dragging = False
+      , moving = False
       , lastCursorPos = Vec2.zero
       , time = 0
       , windowSize = Vec2.zero
       , connectingSocket = Nothing
+      , center = Vec2.zero
+      , panning = False
       }
     , Task.perform InitWindowSize Browser.Dom.getViewport
     )
@@ -52,22 +54,19 @@ init flags =
 
 view : Model -> Html Msg
 view model =
-    let
-        center =
-            Vec2.half model.windowSize
-    in
     Element.layout [] <|
         row [ height fill, width fill ]
             [ el
                 ([ width fill
                  , height fill
-                 , htmlAttribute (Mouse.onMove (clientPos >> Drag))
+                 , htmlAttribute (Mouse.onMove (clientPos >> Move))
                  , Events.onMouseUp Release
+                 , Events.onMouseDown StartPan
                  , Events.onDoubleClick Deselect
                  , Element.behindContent (shaderEl model.time)
                  , inFront (codeEl model.nodes)
                  ]
-                    ++ map inFront (map (nodeEl center) model.nodes)
+                    ++ map inFront (map (nodeEl model.center) model.nodes)
                     ++ [ inFront (canvasEl model) ]
                 )
                 menuEl
@@ -80,12 +79,12 @@ update msg model =
     case msg of
         Select node ->
             let
-                startDragging =
+                startMoving =
                     not (connecting model)
             in
             ( { model
                 | nodes = map (select node) model.nodes
-                , dragging = startDragging
+                , moving = startMoving
               }
             , Cmd.none
             )
@@ -97,20 +96,29 @@ update msg model =
 
         Release ->
             ( { model
-                | dragging = False
+                | moving = False
+                , panning = False
                 , connectingSocket = Nothing
               }
             , Cmd.none
             )
 
-        Drag pos ->
-            if model.dragging then
-                let
-                    delta =
-                        Vec2.sub pos model.lastCursorPos
-                in
+        Move pos ->
+            let
+                delta =
+                    Vec2.sub pos model.lastCursorPos
+            in
+            if model.moving then
                 ( { model
                     | nodes = map (move delta) model.nodes
+                    , lastCursorPos = pos
+                  }
+                , Cmd.none
+                )
+
+            else if model.panning then
+                ( { model
+                    | center = Vec2.add model.center delta
                     , lastCursorPos = pos
                   }
                 , Cmd.none
@@ -161,7 +169,11 @@ update msg model =
             )
 
         InitWindowSize viewport ->
-            ( { model | windowSize = Vec2 viewport.viewport.width viewport.viewport.height }
+            let
+                v =
+                    Vec2 viewport.viewport.width viewport.viewport.height
+            in
+            ( { model | windowSize = v, center = Vec2.half v }
             , Cmd.none
             )
 
@@ -183,6 +195,11 @@ update msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        StartPan ->
+            ( { model | panning = not (connecting model) && not model.moving }
+            , Cmd.none
+            )
 
 
 subscriptions : Model -> Sub Msg
