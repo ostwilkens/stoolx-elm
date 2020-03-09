@@ -1,41 +1,17 @@
-module Connection exposing (Connection, Socket(..), connectionHasNoNode, decoder, encode, getId, getIndex, removePreviousConnection)
+module Connection exposing (Connection, connectionHasNoNode, decoder, encode, removePreviousConnection)
 
 import Json.Decode as Decode exposing (Decoder, int)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 import List exposing (any, filter)
 import Node exposing (Node)
+import Socket exposing (Socket(..))
 
 
 type alias Connection =
     { input : Socket
     , output : Socket
     }
-
-
-type Socket
-    = Input Int Int
-    | Output Int Int
-
-
-getId : Socket -> Int
-getId socket =
-    case socket of
-        Input id _ ->
-            id
-
-        Output id _ ->
-            id
-
-
-getIndex : Socket -> Int
-getIndex socket =
-    case socket of
-        Input _ index ->
-            index
-
-        Output _ index ->
-            index
 
 
 encode : Connection -> Encode.Value
@@ -100,4 +76,4 @@ connectionHasAnyNode nodes connection =
 
 connectionHasNode : Connection -> Node -> Bool
 connectionHasNode connection node =
-    getId connection.input == node.id || getId connection.output == node.id
+    Socket.getId connection.input == node.id || Socket.getId connection.output == node.id

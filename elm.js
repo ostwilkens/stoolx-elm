@@ -5193,7 +5193,7 @@ var $author$project$Connection$Connection = F2(
 	function (input, output) {
 		return {input: input, output: output};
 	});
-var $author$project$Connection$Input = F2(
+var $author$project$Socket$Input = F2(
 	function (a, b) {
 		return {$: 'Input', a: a, b: b};
 	});
@@ -5215,8 +5215,8 @@ var $author$project$Connection$inputDecoder = A3(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 		'id',
 		$elm$json$Json$Decode$int,
-		$elm$json$Json$Decode$succeed($author$project$Connection$Input)));
-var $author$project$Connection$Output = F2(
+		$elm$json$Json$Decode$succeed($author$project$Socket$Input)));
+var $author$project$Socket$Output = F2(
 	function (a, b) {
 		return {$: 'Output', a: a, b: b};
 	});
@@ -5228,7 +5228,7 @@ var $author$project$Connection$outputDecoder = A3(
 		$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 		'id',
 		$elm$json$Json$Decode$int,
-		$elm$json$Json$Decode$succeed($author$project$Connection$Output)));
+		$elm$json$Json$Decode$succeed($author$project$Socket$Output)));
 var $author$project$Connection$decoder = A3(
 	$NoRedInk$elm_json_decode_pipeline$Json$Decode$Pipeline$required,
 	'output',
@@ -5906,7 +5906,7 @@ var $elm$core$List$any = F2(
 			}
 		}
 	});
-var $author$project$Connection$getId = function (socket) {
+var $author$project$Socket$getId = function (socket) {
 	if (socket.$ === 'Input') {
 		var id = socket.a;
 		return id;
@@ -5930,7 +5930,7 @@ var $author$project$Model$connectSockets = F3(
 			function (n) {
 				return _Utils_eq(
 					n.id,
-					$author$project$Connection$getId(output));
+					$author$project$Socket$getId(output));
 			},
 			model.nodes);
 		var outputIsOutput = function () {
@@ -5952,7 +5952,7 @@ var $author$project$Model$connectSockets = F3(
 			function (n) {
 				return _Utils_eq(
 					n.id,
-					$author$project$Connection$getId(input));
+					$author$project$Socket$getId(input));
 			},
 			model.nodes);
 		var inputIsInput = function () {
@@ -5963,8 +5963,8 @@ var $author$project$Model$connectSockets = F3(
 			}
 		}();
 		var selfReferencing = _Utils_eq(
-			$author$project$Connection$getId(input),
-			$author$project$Connection$getId(output));
+			$author$project$Socket$getId(input),
+			$author$project$Socket$getId(output));
 		var wouldBeDuplicate = A2(
 			$elm$core$List$any,
 			function (c) {
@@ -6064,9 +6064,9 @@ var $author$project$Connection$removePreviousConnection = F2(
 var $author$project$Connection$connectionHasNode = F2(
 	function (connection, node) {
 		return _Utils_eq(
-			$author$project$Connection$getId(connection.input),
+			$author$project$Socket$getId(connection.input),
 			node.id) || _Utils_eq(
-			$author$project$Connection$getId(connection.output),
+			$author$project$Socket$getId(connection.output),
 			node.id);
 	});
 var $author$project$Connection$connectionHasAnyNode = F2(
@@ -6631,7 +6631,7 @@ var $author$project$Elements$line = F2(
 						]))
 				]));
 	});
-var $author$project$Connection$getIndex = function (socket) {
+var $author$project$Socket$getIndex = function (socket) {
 	if (socket.$ === 'Input') {
 		var index = socket.b;
 		return index;
@@ -6696,7 +6696,7 @@ var $author$project$Elements$socketPos = F2(
 				function (n) {
 					return _Utils_eq(
 						n.id,
-						$author$project$Connection$getId(socket));
+						$author$project$Socket$getId(socket));
 				},
 				model.nodes));
 		if (node.$ === 'Just') {
@@ -6711,7 +6711,7 @@ var $author$project$Elements$socketPos = F2(
 			}();
 			var offsetX = (A2(
 				$author$project$Elements$socketIndexOffsetX,
-				$author$project$Connection$getIndex(socket),
+				$author$project$Socket$getIndex(socket),
 				count) + model.center.x) - ($author$project$Node$width / 2);
 			return A2($author$project$Vec2$Vec2, justNode.pos.x + offsetX, justNode.pos.y + offsetY);
 		} else {
@@ -14500,7 +14500,7 @@ var $author$project$Elements$inputsEl = F2(
 				$elm$core$List$map,
 				function (i) {
 					return $author$project$Elements$socketEl(
-						A2($author$project$Connection$Input, id, i));
+						A2($author$project$Socket$Input, id, i));
 				},
 				A2($elm$core$List$range, 0, count - 1)));
 	});
@@ -14542,7 +14542,7 @@ var $author$project$Elements$outputsEl = F2(
 				$elm$core$List$map,
 				function (i) {
 					return $author$project$Elements$socketEl(
-						A2($author$project$Connection$Output, id, i));
+						A2($author$project$Socket$Output, id, i));
 				},
 				A2($elm$core$List$range, 0, count - 1)));
 	});
@@ -14696,17 +14696,66 @@ var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions = F3(
 				$mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$eventDecoder));
 	});
 var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove = A2($mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions, 'mousemove', $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions);
+var $author$project$Elements$fragmentShaderAppend = '\n    color.y += sin(u_time) * 0.03;\n    gl_FragColor = vec4(color, 1.0);\n}';
+var $author$project$Elements$fragmentShaderPrepend = '\nprecision mediump float;\nuniform vec2 u_resolution;\nuniform float u_time;\nvoid main(){\n    vec2 st = gl_FragCoord.xy/u_resolution.xy;\n    vec3 color = vec3(0.1);\n';
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $author$project$Elements$getCode = F2(
+	function (model, node) {
+		var connections = A2(
+			$elm$core$List$filter,
+			function (c) {
+				return _Utils_eq(
+					$author$project$Socket$getId(c.input),
+					node.id);
+			},
+			model.connections);
+		var outputIds = A2(
+			$elm$core$List$map,
+			function (c) {
+				return $author$project$Socket$getId(c.output);
+			},
+			connections);
+		var inputNodes = A2(
+			$elm$core$List$filter,
+			function (n) {
+				return A2($elm$core$List$member, n.id, outputIds);
+			},
+			model.nodes);
+		return node.code + (';' + A3(
+			$elm$core$List$foldl,
+			$elm$core$Basics$append,
+			'',
+			A2(
+				$elm$core$List$map,
+				$author$project$Elements$getCode(model),
+				inputNodes)));
+	});
 var $author$project$Elements$fragmentShader = function (model) {
-	var maybeNode = $elm$core$List$head(model.nodes);
-	var code = function () {
-		if (maybeNode.$ === 'Just') {
-			var node = maybeNode.a;
-			return node.code;
-		} else {
-			return '';
-		}
-	}();
-	return '\r\n    precision mediump float;\r\n\r\n    #define PI 3.1415926535\r\n    #define HALF_PI 1.57079632679\r\n\r\n    uniform vec2 u_resolution;\r\n    uniform float u_time;\r\n\r\n    void main(){\r\n        vec2 st = gl_FragCoord.xy/u_resolution.xy;\r\n\r\n        vec3 color = vec3(0.5) + sin(u_time * 1.0) * 0.05;' + (code + '\r\n        color.y += sin(u_time);\r\n\r\n        gl_FragColor = vec4(color, 1.0);\r\n    }');
+	var maybeColorNode = $elm$core$List$head(
+		A2(
+			$elm$core$List$filter,
+			function (n) {
+				return A2($elm$core$String$startsWith, 'color', n.code);
+			},
+			model.nodes));
+	if (maybeColorNode.$ === 'Just') {
+		var colorNode = maybeColorNode.a;
+		return _Utils_ap(
+			$author$project$Elements$fragmentShaderPrepend,
+			_Utils_ap(
+				A2($author$project$Elements$getCode, model, colorNode),
+				$author$project$Elements$fragmentShaderAppend));
+	} else {
+		return '';
+	}
 };
 var $author$project$Elements$shaderEl = function (model) {
 	return $mdgriffith$elm_ui$Element$html(

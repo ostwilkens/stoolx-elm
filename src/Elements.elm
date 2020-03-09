@@ -4,7 +4,7 @@ import Canvas
 import Canvas.Settings
 import Canvas.Settings.Line
 import Color
-import Connection exposing (Connection, Socket(..), getId, getIndex)
+import Connection exposing (Connection)
 import Element exposing (Attribute, Color, Element, alignBottom, alignRight, alignTop, centerX, centerY, column, el, fill, height, moveDown, moveRight, paddingXY, px, rgb, rgba, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -13,9 +13,11 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Html.Attributes
-import List exposing (any, filter, head, map, range)
+import List exposing (any, filter, head, map, member, range)
 import Model exposing (Model, Msg(..))
 import Node exposing (Node, getSelectedCode, inputCount, outputCount, previewCode)
+import Socket exposing (Socket(..), getId, getIndex)
+import String exposing (startsWith)
 import Vec2 exposing (Vec2)
 
 
@@ -79,39 +81,55 @@ shaderEl model =
         )
 
 
+getCode : Model -> Node -> String
+getCode model node =
+    let
+        connections =
+            filter (\c -> Socket.getId c.input == node.id) model.connections
+
+        outputIds =
+            map (\c -> Socket.getId c.output) connections
+
+        inputNodes =
+            filter (\n -> member n.id outputIds) model.nodes
+    in
+    node.code
+        ++ ";"
+        ++ List.foldl (++) "" (map (getCode model) inputNodes)
+
+
 fragmentShader : Model -> String
 fragmentShader model =
     let
-        maybeNode =
-            head model.nodes
-
-        code =
-            case maybeNode of
-                Just node ->
-                    node.code
-
-                Nothing ->
-                    ""
+        maybeColorNode =
+            head (filter (\n -> startsWith "color" n.code) model.nodes)
     in
+    case maybeColorNode of
+        Just colorNode ->
+            fragmentShaderPrepend ++ getCode model colorNode ++ fragmentShaderAppend
+
+        Nothing ->
+            ""
+
+
+fragmentShaderPrepend : String
+fragmentShaderPrepend =
     """
-    precision mediump float;
+precision mediump float;
+uniform vec2 u_resolution;
+uniform float u_time;
+void main(){
+    vec2 st = gl_FragCoord.xy/u_resolution.xy;
+    vec3 color = vec3(0.1);
+"""
 
-    #define PI 3.1415926535
-    #define HALF_PI 1.57079632679
 
-    uniform vec2 u_resolution;
-    uniform float u_time;
-
-    void main(){
-        vec2 st = gl_FragCoord.xy/u_resolution.xy;
-
-        vec3 color = vec3(0.5) + sin(u_time * 1.0) * 0.05;"""
-        ++ code
-        ++ """
-        color.y += sin(u_time);
-
-        gl_FragColor = vec4(color, 1.0);
-    }"""
+fragmentShaderAppend : String
+fragmentShaderAppend =
+    """
+    color.y += sin(u_time) * 0.03;
+    gl_FragColor = vec4(color, 1.0);
+}"""
 
 
 canvasEl : Model -> Element Msg

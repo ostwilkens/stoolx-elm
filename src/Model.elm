@@ -1,13 +1,14 @@
 module Model exposing (Model, Msg(..), SavedModel, connectSockets, connecting, decodeStoredModel, removeSelected, saveModel)
 
 import Browser.Dom
-import Connection exposing (Connection, Socket(..), connectionHasNoNode, getId)
+import Connection exposing (Connection, connectionHasNoNode)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 import List exposing (any, filter)
 import Node exposing (Node)
 import Ports exposing (storeModel)
+import Socket exposing (Socket(..), getId)
 import Vec2 exposing (Vec2)
 
 

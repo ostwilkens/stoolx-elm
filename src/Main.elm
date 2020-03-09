@@ -3,7 +3,7 @@ module Main exposing (main)
 import Browser
 import Browser.Dom
 import Browser.Events
-import Connection exposing (Socket(..), removePreviousConnection)
+import Connection exposing (removePreviousConnection)
 import Element exposing (el, fill, height, htmlAttribute, inFront, row, width)
 import Element.Events as Events
 import Elements exposing (canvasEl, codeEl, menuEl, nodeEl, shaderEl)
