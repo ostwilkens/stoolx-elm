@@ -81,6 +81,35 @@ shaderEl model =
         )
 
 
+-- getDeclarationString : Model -> Node -> String
+-- getDeclarationString model node
+
+
+getReturnType : Node -> String
+getReturnType node =
+    case head (String.split "(" node.code) of
+        Just returnType ->
+            returnType
+        Nothing -> 
+            "?"
+
+
+
+getInputReferenceString : Model -> Connection -> String
+getInputReferenceString model connection =
+    let
+        maybeInputNode = Node.getById (Socket.getId connection.input) model.nodes
+    in
+    case maybeInputNode of
+        Just inputNode ->
+            let
+                returnType = getReturnType inputNode
+            in
+            "temp"
+        Nothing ->
+            "?"
+
+
 getCode : Model -> Node -> String
 getCode model node =
     let

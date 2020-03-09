@@ -1,4 +1,4 @@
-module Node exposing (Node, decoder, deselect, encode, getSelectedCode, height, init, inputCount, move, nextId, outputCount, previewCode, select, selected, setCode, width)
+module Node exposing (Node, decoder, deselect, encode, getById, getSelectedCode, height, init, inputCount, move, nextId, outputCount, previewCode, select, selected, setCode, width)
 
 import Json.Decode as Decode exposing (Decoder, int, string)
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -61,6 +61,11 @@ setCode code node =
 returnType : Node -> Maybe String
 returnType node =
     head (split "(" node.code)
+
+
+getById : Int -> List Node -> Maybe Node
+getById id nodes =
+    head (filter (\n -> n.id == id) nodes)
 
 
 outputCount : Node -> Int
