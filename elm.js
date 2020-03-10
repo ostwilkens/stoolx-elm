@@ -14696,8 +14696,110 @@ var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions = F3(
 				$mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$eventDecoder));
 	});
 var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove = A2($mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions, 'mousemove', $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions);
-var $author$project$Elements$fragmentShaderAppend = '\n    color.y += sin(u_time) * 0.03;\n    gl_FragColor = vec4(color, 1.0);\n}';
-var $author$project$Elements$fragmentShaderPrepend = '\nprecision mediump float;\nuniform vec2 u_resolution;\nuniform float u_time;\nvoid main(){\n    vec2 st = gl_FragCoord.xy/u_resolution.xy;\n    vec3 color = vec3(0.1);\n';
+var $author$project$Elements$fragmentShaderAppend = '\r\n    // color.y += sin(u_time) * 0.03;\r\n    gl_FragColor = vec4(color, 1.0);\r\n}';
+var $author$project$Elements$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\nvoid main(){\r\n    vec2 st = gl_FragCoord.xy/u_resolution.xy;\r\n    vec3 color = vec3(0.0);\r\n';
+var $author$project$Node$getById = F2(
+	function (id, nodes) {
+		return $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (n) {
+					return _Utils_eq(n.id, id);
+				},
+				nodes));
+	});
+var $author$project$Elements$getReturnType = function (node) {
+	var _v0 = $elm$core$List$head(
+		A2($elm$core$String$split, '(', node.code));
+	if (_v0.$ === 'Just') {
+		var returnType = _v0.a;
+		return returnType;
+	} else {
+		return '?';
+	}
+};
+var $author$project$Elements$getOutputReferenceString = F2(
+	function (model, output) {
+		var maybeOutputNode = A2(
+			$author$project$Node$getById,
+			$author$project$Socket$getId(output),
+			model.nodes);
+		if (maybeOutputNode.$ === 'Just') {
+			var outputNode = maybeOutputNode.a;
+			var returnType = $author$project$Elements$getReturnType(outputNode);
+			if (returnType === 'float') {
+				return '_' + $elm$core$String$fromInt(outputNode.id);
+			} else {
+				var _v1 = $author$project$Socket$getIndex(output);
+				switch (_v1) {
+					case 0:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.x');
+					case 1:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.y');
+					case 2:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.z');
+					case 3:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.w');
+					default:
+						return '?';
+				}
+			}
+		} else {
+			return '?';
+		}
+	});
+var $author$project$Elements$getReplacementString = F3(
+	function (connections, model, index) {
+		var _v0 = $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (c) {
+					return _Utils_eq(
+						$author$project$Socket$getIndex(c.input),
+						index);
+				},
+				connections));
+		if (_v0.$ === 'Just') {
+			var connection = _v0.a;
+			return A2($author$project$Elements$getOutputReferenceString, model, connection.output);
+		} else {
+			return '__' + $elm$core$String$fromInt(index);
+		}
+	});
+var $author$project$Elements$getDeclarationString = F3(
+	function (node, connections, model) {
+		var returnType = $author$project$Elements$getReturnType(node);
+		var inputCount = $author$project$Node$inputCount(node);
+		var placeholders = A2(
+			$elm$core$List$map,
+			function (n) {
+				return '__' + $elm$core$String$fromInt(n);
+			},
+			A2($elm$core$List$range, 0, inputCount - 1));
+		var replacements = A2(
+			$elm$core$List$map,
+			A2($author$project$Elements$getReplacementString, connections, model),
+			A2($elm$core$List$range, 0, inputCount - 1));
+		var placeholdersReplacements = A3(
+			$elm$core$List$map2,
+			F2(
+				function (a, b) {
+					return _Utils_Tuple2(a, b);
+				}),
+			placeholders,
+			replacements);
+		var code = A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, c) {
+					var p = _v0.a;
+					var r = _v0.b;
+					return A3($elm$core$String$replace, p, r, c);
+				}),
+			node.code,
+			placeholdersReplacements);
+		return A2($elm$core$String$startsWith, '!', code) ? (A2($elm$core$String$dropLeft, 1, code) + ';') : (returnType + (' _' + ($elm$core$String$fromInt(node.id) + (' = ' + (code + ';')))));
+	});
 var $elm$core$List$member = F2(
 	function (x, xs) {
 		return A2(
@@ -14729,21 +14831,23 @@ var $author$project$Elements$getCode = F2(
 				return A2($elm$core$List$member, n.id, outputIds);
 			},
 			model.nodes);
-		return node.code + (';' + A3(
-			$elm$core$List$foldl,
-			$elm$core$Basics$append,
-			'',
-			A2(
-				$elm$core$List$map,
-				$author$project$Elements$getCode(model),
-				inputNodes)));
+		return _Utils_ap(
+			A3(
+				$elm$core$List$foldl,
+				$elm$core$Basics$append,
+				'',
+				A2(
+					$elm$core$List$map,
+					$author$project$Elements$getCode(model),
+					inputNodes)),
+			A3($author$project$Elements$getDeclarationString, node, connections, model));
 	});
 var $author$project$Elements$fragmentShader = function (model) {
 	var maybeColorNode = $elm$core$List$head(
 		A2(
 			$elm$core$List$filter,
 			function (n) {
-				return A2($elm$core$String$startsWith, 'color', n.code);
+				return A2($elm$core$String$startsWith, '!color', n.code);
 			},
 			model.nodes));
 	if (maybeColorNode.$ === 'Just') {
