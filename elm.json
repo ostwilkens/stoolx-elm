@@ -16,7 +16,8 @@
             "elm-explorations/webgl": "1.1.1",
             "joakin/elm-canvas": "4.1.0",
             "mdgriffith/elm-ui": "1.1.5",
-            "mpizenberg/elm-pointer-events": "4.0.1"
+            "mpizenberg/elm-pointer-events": "4.0.1",
+            "elm-community/list-extra": "8.2.3"
         },
         "indirect": {
             "elm/bytes": "1.0.8",

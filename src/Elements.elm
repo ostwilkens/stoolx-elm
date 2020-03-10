@@ -14,6 +14,7 @@ import Element.Input as Input
 import Html
 import Html.Attributes
 import List exposing (any, filter, head, map, member, range)
+import List.Extra
 import Model exposing (Model, Msg(..))
 import Node exposing (Node, getSelectedCode, inputCount, outputCount, previewCode)
 import Socket exposing (Socket(..), getId, getIndex)
@@ -81,7 +82,7 @@ shaderEl model =
         )
 
 
-getCode : Model -> Node -> String
+getCode : Model -> Node -> List String
 getCode model node =
     let
         connections =
@@ -93,8 +94,8 @@ getCode model node =
         inputNodes =
             filter (\n -> member n.id outputIds) model.nodes
     in
-    List.foldl (++) "" (map (getCode model) inputNodes)
-        ++ getDeclarationString node connections model
+    getDeclarationString node connections model
+        :: List.foldl (++) [] (map (getCode model) inputNodes)
 
 
 getReplacementString : List Connection -> Model -> Int -> String
@@ -132,7 +133,7 @@ getDeclarationString node connections model =
         String.dropLeft 1 code ++ ";"
 
     else
-        returnType ++ " _" ++ String.fromInt node.id ++ " = " ++ code ++ ";"
+        returnType ++ " _" ++ String.fromInt node.id ++ " = " ++ code ++ ";\u{000D}\n"
 
 
 getReturnType : Node -> String
@@ -189,7 +190,14 @@ fragmentShader model =
     in
     case maybeColorNode of
         Just colorNode ->
-            fragmentShaderPrepend ++ getCode model colorNode ++ fragmentShaderAppend
+            let
+                declarations =
+                    getCode model colorNode
+
+                code =
+                    List.foldl (++) "" (List.Extra.unique declarations)
+            in
+            fragmentShaderPrepend ++ code ++ fragmentShaderAppend
 
         Nothing ->
             ""
@@ -202,17 +210,18 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
 void main(){
-    vec2 st = gl_FragCoord.xy/u_resolution.xy;
-    vec3 color = vec3(0.0);
+//u_time
+vec2 st = gl_FragCoord.xy/u_resolution.xy;
+vec3 color = vec3(0.0);
 """
 
 
 fragmentShaderAppend : String
 fragmentShaderAppend =
     """
-    // color.y += sin(u_time) * 0.03;
-    gl_FragColor = vec4(color, 1.0);
-}"""
+gl_FragColor = vec4(color, 1.0);
+}
+"""
 
 
 canvasEl : Model -> Element Msg

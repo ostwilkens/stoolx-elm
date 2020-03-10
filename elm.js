@@ -14696,8 +14696,8 @@ var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions = F3(
 				$mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$eventDecoder));
 	});
 var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove = A2($mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions, 'mousemove', $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions);
-var $author$project$Elements$fragmentShaderAppend = '\r\n    // color.y += sin(u_time) * 0.03;\r\n    gl_FragColor = vec4(color, 1.0);\r\n}';
-var $author$project$Elements$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\nvoid main(){\r\n    vec2 st = gl_FragCoord.xy/u_resolution.xy;\r\n    vec3 color = vec3(0.0);\r\n';
+var $author$project$Elements$fragmentShaderAppend = '\r\ngl_FragColor = vec4(color, 1.0);\r\n}\r\n';
+var $author$project$Elements$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\nvoid main(){\r\n//u_time\r\nvec2 st = gl_FragCoord.xy/u_resolution.xy;\r\nvec3 color = vec3(0.0);\r\n';
 var $author$project$Node$getById = F2(
 	function (id, nodes) {
 		return $elm$core$List$head(
@@ -14798,7 +14798,7 @@ var $author$project$Elements$getDeclarationString = F3(
 				}),
 			node.code,
 			placeholdersReplacements);
-		return A2($elm$core$String$startsWith, '!', code) ? (A2($elm$core$String$dropLeft, 1, code) + ';') : (returnType + (' _' + ($elm$core$String$fromInt(node.id) + (' = ' + (code + ';')))));
+		return A2($elm$core$String$startsWith, '!', code) ? (A2($elm$core$String$dropLeft, 1, code) + ';') : (returnType + (' _' + ($elm$core$String$fromInt(node.id) + (' = ' + (code + ';\u000D\n')))));
 	});
 var $elm$core$List$member = F2(
 	function (x, xs) {
@@ -14831,17 +14831,55 @@ var $author$project$Elements$getCode = F2(
 				return A2($elm$core$List$member, n.id, outputIds);
 			},
 			model.nodes);
-		return _Utils_ap(
+		return A2(
+			$elm$core$List$cons,
+			A3($author$project$Elements$getDeclarationString, node, connections, model),
 			A3(
 				$elm$core$List$foldl,
 				$elm$core$Basics$append,
-				'',
+				_List_Nil,
 				A2(
 					$elm$core$List$map,
 					$author$project$Elements$getCode(model),
-					inputNodes)),
-			A3($author$project$Elements$getDeclarationString, node, connections, model));
+					inputNodes)));
 	});
+var $elm_community$list_extra$List$Extra$uniqueHelp = F4(
+	function (f, existing, remaining, accumulator) {
+		uniqueHelp:
+		while (true) {
+			if (!remaining.b) {
+				return $elm$core$List$reverse(accumulator);
+			} else {
+				var first = remaining.a;
+				var rest = remaining.b;
+				var computedFirst = f(first);
+				if (A2($elm$core$Set$member, computedFirst, existing)) {
+					var $temp$f = f,
+						$temp$existing = existing,
+						$temp$remaining = rest,
+						$temp$accumulator = accumulator;
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				} else {
+					var $temp$f = f,
+						$temp$existing = A2($elm$core$Set$insert, computedFirst, existing),
+						$temp$remaining = rest,
+						$temp$accumulator = A2($elm$core$List$cons, first, accumulator);
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				}
+			}
+		}
+	});
+var $elm_community$list_extra$List$Extra$unique = function (list) {
+	return A4($elm_community$list_extra$List$Extra$uniqueHelp, $elm$core$Basics$identity, $elm$core$Set$empty, list, _List_Nil);
+};
 var $author$project$Elements$fragmentShader = function (model) {
 	var maybeColorNode = $elm$core$List$head(
 		A2(
@@ -14852,11 +14890,15 @@ var $author$project$Elements$fragmentShader = function (model) {
 			model.nodes));
 	if (maybeColorNode.$ === 'Just') {
 		var colorNode = maybeColorNode.a;
+		var declarations = A2($author$project$Elements$getCode, model, colorNode);
+		var code = A3(
+			$elm$core$List$foldl,
+			$elm$core$Basics$append,
+			'',
+			$elm_community$list_extra$List$Extra$unique(declarations));
 		return _Utils_ap(
 			$author$project$Elements$fragmentShaderPrepend,
-			_Utils_ap(
-				A2($author$project$Elements$getCode, model, colorNode),
-				$author$project$Elements$fragmentShaderAppend));
+			_Utils_ap(code, $author$project$Elements$fragmentShaderAppend));
 	} else {
 		return '';
 	}
