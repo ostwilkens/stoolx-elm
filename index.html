@@ -20,10 +20,18 @@
     , flags: startingState
   });
 
+  var canvas = document.getElementById('shaderCanvas');
+  var sandbox = new GlslCanvas(canvas);
+
   app.ports.storeModel.subscribe(function(model) {
       var modelJson = JSON.stringify(model);
       localStorage.setItem('stoolx-save', modelJson);
       console.log("Saved state: ", modelJson);
+  });
+
+  app.ports.setGlsl.subscribe(function(glsl) {
+    console.log(glsl);
+    sandbox.load(glsl);
   });
   </script>
 </body>

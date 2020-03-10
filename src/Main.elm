@@ -13,6 +13,8 @@ import Json.Encode as Encode
 import List exposing (map)
 import Model exposing (Model, Msg(..), connectSockets, connecting, decodeStoredModel, removeSelected, saveModel)
 import Node exposing (deselect, move, nextId, select, setCode)
+import Ports
+import Shader
 import Task
 import Vec2 exposing (Vec2)
 
@@ -149,8 +151,12 @@ update msg model =
             )
 
         SetCode code ->
-            ( { model | nodes = map (setCode code) model.nodes }
-            , Cmd.none
+            let
+                newModel =
+                    { model | nodes = map (setCode code) model.nodes }
+            in
+            ( newModel
+            , setGlsl newModel
             )
 
         UpdateTime delta ->
@@ -172,9 +178,12 @@ update msg model =
             let
                 v =
                     Vec2 viewport.viewport.width viewport.viewport.height
+
+                newModel =
+                    { model | windowSize = v, center = Vec2.half v }
             in
-            ( { model | windowSize = v, center = Vec2.half v }
-            , Cmd.none
+            ( newModel
+            , setGlsl newModel
             )
 
         Connect socket ->
@@ -186,8 +195,12 @@ update msg model =
                     in
                     case connection of
                         Just justConnection ->
-                            ( { model | connections = justConnection :: removePreviousConnection model.connections justConnection }
-                            , Cmd.none
+                            let
+                                newModel =
+                                    { model | connections = justConnection :: removePreviousConnection model.connections justConnection }
+                            in
+                            ( newModel
+                            , setGlsl newModel
                             )
 
                         Nothing ->
@@ -217,3 +230,9 @@ clientPos event =
             event.clientPos
     in
     Vec2 x y
+
+
+setGlsl : Model -> Cmd msg
+setGlsl model =
+    Shader.fragmentShader model
+        |> Ports.setGlsl

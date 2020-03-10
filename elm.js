@@ -6225,6 +6225,302 @@ var $author$project$Node$setCode = F2(
 			node,
 			{code: code}) : node;
 	});
+var $author$project$Shader$fragmentShaderAppend = '\r\ngl_FragColor = vec4(color, 1.0);\r\n}\r\n';
+var $author$project$Shader$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\nvoid main(){\r\n//u_time\r\nvec2 st = gl_FragCoord.xy/u_resolution.xy;\r\nvec3 color = vec3(0.0);\r\n';
+var $author$project$Socket$getIndex = function (socket) {
+	if (socket.$ === 'Input') {
+		var index = socket.b;
+		return index;
+	} else {
+		var index = socket.b;
+		return index;
+	}
+};
+var $elm$core$List$head = function (list) {
+	if (list.b) {
+		var x = list.a;
+		var xs = list.b;
+		return $elm$core$Maybe$Just(x);
+	} else {
+		return $elm$core$Maybe$Nothing;
+	}
+};
+var $author$project$Node$getById = F2(
+	function (id, nodes) {
+		return $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (n) {
+					return _Utils_eq(n.id, id);
+				},
+				nodes));
+	});
+var $author$project$Shader$getReturnType = function (node) {
+	var _v0 = $elm$core$List$head(
+		A2($elm$core$String$split, '(', node.code));
+	if (_v0.$ === 'Just') {
+		var returnType = _v0.a;
+		return returnType;
+	} else {
+		return '?';
+	}
+};
+var $author$project$Shader$getOutputReferenceString = F2(
+	function (model, output) {
+		var maybeOutputNode = A2(
+			$author$project$Node$getById,
+			$author$project$Socket$getId(output),
+			model.nodes);
+		if (maybeOutputNode.$ === 'Just') {
+			var outputNode = maybeOutputNode.a;
+			var returnType = $author$project$Shader$getReturnType(outputNode);
+			if (returnType === 'float') {
+				return '_' + $elm$core$String$fromInt(outputNode.id);
+			} else {
+				var _v1 = $author$project$Socket$getIndex(output);
+				switch (_v1) {
+					case 0:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.x');
+					case 1:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.y');
+					case 2:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.z');
+					case 3:
+						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.w');
+					default:
+						return '?';
+				}
+			}
+		} else {
+			return '?';
+		}
+	});
+var $author$project$Shader$getReplacementString = F3(
+	function (connections, model, index) {
+		var _v0 = $elm$core$List$head(
+			A2(
+				$elm$core$List$filter,
+				function (c) {
+					return _Utils_eq(
+						$author$project$Socket$getIndex(c.input),
+						index);
+				},
+				connections));
+		if (_v0.$ === 'Just') {
+			var connection = _v0.a;
+			return A2($author$project$Shader$getOutputReferenceString, model, connection.output);
+		} else {
+			return '__' + $elm$core$String$fromInt(index);
+		}
+	});
+var $author$project$Node$inputCount = function (node) {
+	return $elm$core$List$length(
+		A2($elm$core$String$split, '__', node.code)) - 1;
+};
+var $elm$core$String$replace = F3(
+	function (before, after, string) {
+		return A2(
+			$elm$core$String$join,
+			after,
+			A2($elm$core$String$split, before, string));
+	});
+var $author$project$Shader$getDeclarationString = F3(
+	function (node, connections, model) {
+		var returnType = $author$project$Shader$getReturnType(node);
+		var inputCount = $author$project$Node$inputCount(node);
+		var placeholders = A2(
+			$elm$core$List$map,
+			function (n) {
+				return '__' + $elm$core$String$fromInt(n);
+			},
+			A2($elm$core$List$range, 0, inputCount - 1));
+		var replacements = A2(
+			$elm$core$List$map,
+			A2($author$project$Shader$getReplacementString, connections, model),
+			A2($elm$core$List$range, 0, inputCount - 1));
+		var placeholdersReplacements = A3(
+			$elm$core$List$map2,
+			F2(
+				function (a, b) {
+					return _Utils_Tuple2(a, b);
+				}),
+			placeholders,
+			replacements);
+		var code = A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v0, c) {
+					var p = _v0.a;
+					var r = _v0.b;
+					return A3($elm$core$String$replace, p, r, c);
+				}),
+			node.code,
+			placeholdersReplacements);
+		return A2($elm$core$String$startsWith, '!', code) ? (A2($elm$core$String$dropLeft, 1, code) + ';') : (returnType + (' _' + ($elm$core$String$fromInt(node.id) + (' = ' + (code + ';\u000D\n')))));
+	});
+var $elm$core$List$member = F2(
+	function (x, xs) {
+		return A2(
+			$elm$core$List$any,
+			function (a) {
+				return _Utils_eq(a, x);
+			},
+			xs);
+	});
+var $author$project$Shader$getCode = F2(
+	function (model, node) {
+		var connections = A2(
+			$elm$core$List$filter,
+			function (c) {
+				return _Utils_eq(
+					$author$project$Socket$getId(c.input),
+					node.id);
+			},
+			model.connections);
+		var outputIds = A2(
+			$elm$core$List$map,
+			function (c) {
+				return $author$project$Socket$getId(c.output);
+			},
+			connections);
+		var inputNodes = A2(
+			$elm$core$List$filter,
+			function (n) {
+				return A2($elm$core$List$member, n.id, outputIds);
+			},
+			model.nodes);
+		return A2(
+			$elm$core$List$cons,
+			A3($author$project$Shader$getDeclarationString, node, connections, model),
+			A3(
+				$elm$core$List$foldl,
+				$elm$core$Basics$append,
+				_List_Nil,
+				A2(
+					$elm$core$List$map,
+					$author$project$Shader$getCode(model),
+					inputNodes)));
+	});
+var $elm$core$Set$Set_elm_builtin = function (a) {
+	return {$: 'Set_elm_builtin', a: a};
+};
+var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
+var $elm$core$Set$insert = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return $elm$core$Set$Set_elm_builtin(
+			A3($elm$core$Dict$insert, key, _Utils_Tuple0, dict));
+	});
+var $elm$core$Dict$get = F2(
+	function (targetKey, dict) {
+		get:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return $elm$core$Maybe$Nothing;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
+				switch (_v1.$) {
+					case 'LT':
+						var $temp$targetKey = targetKey,
+							$temp$dict = left;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+					case 'EQ':
+						return $elm$core$Maybe$Just(value);
+					default:
+						var $temp$targetKey = targetKey,
+							$temp$dict = right;
+						targetKey = $temp$targetKey;
+						dict = $temp$dict;
+						continue get;
+				}
+			}
+		}
+	});
+var $elm$core$Dict$member = F2(
+	function (key, dict) {
+		var _v0 = A2($elm$core$Dict$get, key, dict);
+		if (_v0.$ === 'Just') {
+			return true;
+		} else {
+			return false;
+		}
+	});
+var $elm$core$Set$member = F2(
+	function (key, _v0) {
+		var dict = _v0.a;
+		return A2($elm$core$Dict$member, key, dict);
+	});
+var $elm_community$list_extra$List$Extra$uniqueHelp = F4(
+	function (f, existing, remaining, accumulator) {
+		uniqueHelp:
+		while (true) {
+			if (!remaining.b) {
+				return $elm$core$List$reverse(accumulator);
+			} else {
+				var first = remaining.a;
+				var rest = remaining.b;
+				var computedFirst = f(first);
+				if (A2($elm$core$Set$member, computedFirst, existing)) {
+					var $temp$f = f,
+						$temp$existing = existing,
+						$temp$remaining = rest,
+						$temp$accumulator = accumulator;
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				} else {
+					var $temp$f = f,
+						$temp$existing = A2($elm$core$Set$insert, computedFirst, existing),
+						$temp$remaining = rest,
+						$temp$accumulator = A2($elm$core$List$cons, first, accumulator);
+					f = $temp$f;
+					existing = $temp$existing;
+					remaining = $temp$remaining;
+					accumulator = $temp$accumulator;
+					continue uniqueHelp;
+				}
+			}
+		}
+	});
+var $elm_community$list_extra$List$Extra$unique = function (list) {
+	return A4($elm_community$list_extra$List$Extra$uniqueHelp, $elm$core$Basics$identity, $elm$core$Set$empty, list, _List_Nil);
+};
+var $author$project$Shader$fragmentShader = function (model) {
+	var maybeColorNode = $elm$core$List$head(
+		A2(
+			$elm$core$List$filter,
+			function (n) {
+				return A2($elm$core$String$startsWith, '!color', n.code);
+			},
+			model.nodes));
+	if (maybeColorNode.$ === 'Just') {
+		var colorNode = maybeColorNode.a;
+		var declarations = A2($author$project$Shader$getCode, model, colorNode);
+		var code = A3(
+			$elm$core$List$foldl,
+			$elm$core$Basics$append,
+			'',
+			$elm_community$list_extra$List$Extra$unique(declarations));
+		return _Utils_ap(
+			$author$project$Shader$fragmentShaderPrepend,
+			_Utils_ap(code, $author$project$Shader$fragmentShaderAppend));
+	} else {
+		return '';
+	}
+};
+var $author$project$Ports$setGlsl = _Platform_outgoingPort('setGlsl', $elm$json$Json$Encode$string);
+var $author$project$Main$setGlsl = function (model) {
+	return $author$project$Ports$setGlsl(
+		$author$project$Shader$fragmentShader(model));
+};
 var $author$project$Vec2$sub = F2(
 	function (a, b) {
 		return A2($author$project$Vec2$Vec2, a.x - b.x, a.y - b.y);
@@ -6307,16 +6603,17 @@ var $author$project$Main$update = F2(
 					$author$project$Model$saveModel(model));
 			case 'SetCode':
 				var code = msg.a;
+				var newModel = _Utils_update(
+					model,
+					{
+						nodes: A2(
+							$elm$core$List$map,
+							$author$project$Node$setCode(code),
+							model.nodes)
+					});
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							nodes: A2(
-								$elm$core$List$map,
-								$author$project$Node$setCode(code),
-								model.nodes)
-						}),
-					$elm$core$Platform$Cmd$none);
+					newModel,
+					$author$project$Main$setGlsl(newModel));
 			case 'UpdateTime':
 				var delta = msg.a;
 				return _Utils_Tuple2(
@@ -6343,14 +6640,15 @@ var $author$project$Main$update = F2(
 			case 'InitWindowSize':
 				var viewport = msg.a;
 				var v = A2($author$project$Vec2$Vec2, viewport.viewport.width, viewport.viewport.height);
+				var newModel = _Utils_update(
+					model,
+					{
+						center: $author$project$Vec2$half(v),
+						windowSize: v
+					});
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							center: $author$project$Vec2$half(v),
-							windowSize: v
-						}),
-					$elm$core$Platform$Cmd$none);
+					newModel,
+					$author$project$Main$setGlsl(newModel));
 			case 'Connect':
 				var socket = msg.a;
 				var _v1 = model.connectingSocket;
@@ -6359,16 +6657,17 @@ var $author$project$Main$update = F2(
 					var connection = A3($author$project$Model$connectSockets, model, socket, otherSocket);
 					if (connection.$ === 'Just') {
 						var justConnection = connection.a;
+						var newModel = _Utils_update(
+							model,
+							{
+								connections: A2(
+									$elm$core$List$cons,
+									justConnection,
+									A2($author$project$Connection$removePreviousConnection, model.connections, justConnection))
+							});
 						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									connections: A2(
-										$elm$core$List$cons,
-										justConnection,
-										A2($author$project$Connection$removePreviousConnection, model.connections, justConnection))
-								}),
-							$elm$core$Platform$Cmd$none);
+							newModel,
+							$author$project$Main$setGlsl(newModel));
 					} else {
 						return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 					}
@@ -6631,29 +6930,7 @@ var $author$project$Elements$line = F2(
 						]))
 				]));
 	});
-var $author$project$Socket$getIndex = function (socket) {
-	if (socket.$ === 'Input') {
-		var index = socket.b;
-		return index;
-	} else {
-		var index = socket.b;
-		return index;
-	}
-};
-var $elm$core$List$head = function (list) {
-	if (list.b) {
-		var x = list.a;
-		var xs = list.b;
-		return $elm$core$Maybe$Just(x);
-	} else {
-		return $elm$core$Maybe$Nothing;
-	}
-};
 var $author$project$Node$height = 100;
-var $author$project$Node$inputCount = function (node) {
-	return $elm$core$List$length(
-		A2($elm$core$String$split, '__', node.code)) - 1;
-};
 var $author$project$Node$returnType = function (node) {
 	return $elm$core$List$head(
 		A2($elm$core$String$split, '(', node.code));
@@ -7786,10 +8063,6 @@ var $mdgriffith$elm_ui$Internal$Flag$centerX = $mdgriffith$elm_ui$Internal$Flag$
 var $mdgriffith$elm_ui$Internal$Flag$centerY = $mdgriffith$elm_ui$Internal$Flag$flag(43);
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
-var $elm$core$Set$Set_elm_builtin = function (a) {
-	return {$: 'Set_elm_builtin', a: a};
-};
-var $elm$core$Set$empty = $elm$core$Set$Set_elm_builtin($elm$core$Dict$empty);
 var $mdgriffith$elm_ui$Internal$Model$lengthClassName = function (x) {
 	switch (x.$) {
 		case 'Px':
@@ -7934,57 +8207,6 @@ var $mdgriffith$elm_ui$Internal$Model$getStyleName = function (style) {
 				$mdgriffith$elm_ui$Internal$Model$transformClass(x));
 	}
 };
-var $elm$core$Set$insert = F2(
-	function (key, _v0) {
-		var dict = _v0.a;
-		return $elm$core$Set$Set_elm_builtin(
-			A3($elm$core$Dict$insert, key, _Utils_Tuple0, dict));
-	});
-var $elm$core$Dict$get = F2(
-	function (targetKey, dict) {
-		get:
-		while (true) {
-			if (dict.$ === 'RBEmpty_elm_builtin') {
-				return $elm$core$Maybe$Nothing;
-			} else {
-				var key = dict.b;
-				var value = dict.c;
-				var left = dict.d;
-				var right = dict.e;
-				var _v1 = A2($elm$core$Basics$compare, targetKey, key);
-				switch (_v1.$) {
-					case 'LT':
-						var $temp$targetKey = targetKey,
-							$temp$dict = left;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-					case 'EQ':
-						return $elm$core$Maybe$Just(value);
-					default:
-						var $temp$targetKey = targetKey,
-							$temp$dict = right;
-						targetKey = $temp$targetKey;
-						dict = $temp$dict;
-						continue get;
-				}
-			}
-		}
-	});
-var $elm$core$Dict$member = F2(
-	function (key, dict) {
-		var _v0 = A2($elm$core$Dict$get, key, dict);
-		if (_v0.$ === 'Just') {
-			return true;
-		} else {
-			return false;
-		}
-	});
-var $elm$core$Set$member = F2(
-	function (key, _v0) {
-		var dict = _v0.a;
-		return A2($elm$core$Dict$member, key, dict);
-	});
 var $mdgriffith$elm_ui$Internal$Model$reduceStyles = F2(
 	function (style, nevermind) {
 		var cache = nevermind.a;
@@ -14359,13 +14581,6 @@ var $author$project$Model$Select = function (a) {
 };
 var $mdgriffith$elm_ui$Internal$Model$CenterY = {$: 'CenterY'};
 var $mdgriffith$elm_ui$Element$centerY = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$CenterY);
-var $elm$core$String$replace = F3(
-	function (before, after, string) {
-		return A2(
-			$elm$core$String$join,
-			after,
-			A2($elm$core$String$split, before, string));
-	});
 var $elm$core$String$trim = _String_trim;
 var $author$project$Node$previewCode = function (node) {
 	return $elm$core$String$trim(
@@ -14696,213 +14911,6 @@ var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions = F3(
 				$mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$eventDecoder));
 	});
 var $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onMove = A2($mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$onWithOptions, 'mousemove', $mpizenberg$elm_pointer_events$Html$Events$Extra$Mouse$defaultOptions);
-var $author$project$Elements$fragmentShaderAppend = '\r\ngl_FragColor = vec4(color, 1.0);\r\n}\r\n';
-var $author$project$Elements$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\nvoid main(){\r\n//u_time\r\nvec2 st = gl_FragCoord.xy/u_resolution.xy;\r\nvec3 color = vec3(0.0);\r\n';
-var $author$project$Node$getById = F2(
-	function (id, nodes) {
-		return $elm$core$List$head(
-			A2(
-				$elm$core$List$filter,
-				function (n) {
-					return _Utils_eq(n.id, id);
-				},
-				nodes));
-	});
-var $author$project$Elements$getReturnType = function (node) {
-	var _v0 = $elm$core$List$head(
-		A2($elm$core$String$split, '(', node.code));
-	if (_v0.$ === 'Just') {
-		var returnType = _v0.a;
-		return returnType;
-	} else {
-		return '?';
-	}
-};
-var $author$project$Elements$getOutputReferenceString = F2(
-	function (model, output) {
-		var maybeOutputNode = A2(
-			$author$project$Node$getById,
-			$author$project$Socket$getId(output),
-			model.nodes);
-		if (maybeOutputNode.$ === 'Just') {
-			var outputNode = maybeOutputNode.a;
-			var returnType = $author$project$Elements$getReturnType(outputNode);
-			if (returnType === 'float') {
-				return '_' + $elm$core$String$fromInt(outputNode.id);
-			} else {
-				var _v1 = $author$project$Socket$getIndex(output);
-				switch (_v1) {
-					case 0:
-						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.x');
-					case 1:
-						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.y');
-					case 2:
-						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.z');
-					case 3:
-						return '_' + ($elm$core$String$fromInt(outputNode.id) + '.w');
-					default:
-						return '?';
-				}
-			}
-		} else {
-			return '?';
-		}
-	});
-var $author$project$Elements$getReplacementString = F3(
-	function (connections, model, index) {
-		var _v0 = $elm$core$List$head(
-			A2(
-				$elm$core$List$filter,
-				function (c) {
-					return _Utils_eq(
-						$author$project$Socket$getIndex(c.input),
-						index);
-				},
-				connections));
-		if (_v0.$ === 'Just') {
-			var connection = _v0.a;
-			return A2($author$project$Elements$getOutputReferenceString, model, connection.output);
-		} else {
-			return '__' + $elm$core$String$fromInt(index);
-		}
-	});
-var $author$project$Elements$getDeclarationString = F3(
-	function (node, connections, model) {
-		var returnType = $author$project$Elements$getReturnType(node);
-		var inputCount = $author$project$Node$inputCount(node);
-		var placeholders = A2(
-			$elm$core$List$map,
-			function (n) {
-				return '__' + $elm$core$String$fromInt(n);
-			},
-			A2($elm$core$List$range, 0, inputCount - 1));
-		var replacements = A2(
-			$elm$core$List$map,
-			A2($author$project$Elements$getReplacementString, connections, model),
-			A2($elm$core$List$range, 0, inputCount - 1));
-		var placeholdersReplacements = A3(
-			$elm$core$List$map2,
-			F2(
-				function (a, b) {
-					return _Utils_Tuple2(a, b);
-				}),
-			placeholders,
-			replacements);
-		var code = A3(
-			$elm$core$List$foldl,
-			F2(
-				function (_v0, c) {
-					var p = _v0.a;
-					var r = _v0.b;
-					return A3($elm$core$String$replace, p, r, c);
-				}),
-			node.code,
-			placeholdersReplacements);
-		return A2($elm$core$String$startsWith, '!', code) ? (A2($elm$core$String$dropLeft, 1, code) + ';') : (returnType + (' _' + ($elm$core$String$fromInt(node.id) + (' = ' + (code + ';\u000D\n')))));
-	});
-var $elm$core$List$member = F2(
-	function (x, xs) {
-		return A2(
-			$elm$core$List$any,
-			function (a) {
-				return _Utils_eq(a, x);
-			},
-			xs);
-	});
-var $author$project$Elements$getCode = F2(
-	function (model, node) {
-		var connections = A2(
-			$elm$core$List$filter,
-			function (c) {
-				return _Utils_eq(
-					$author$project$Socket$getId(c.input),
-					node.id);
-			},
-			model.connections);
-		var outputIds = A2(
-			$elm$core$List$map,
-			function (c) {
-				return $author$project$Socket$getId(c.output);
-			},
-			connections);
-		var inputNodes = A2(
-			$elm$core$List$filter,
-			function (n) {
-				return A2($elm$core$List$member, n.id, outputIds);
-			},
-			model.nodes);
-		return A2(
-			$elm$core$List$cons,
-			A3($author$project$Elements$getDeclarationString, node, connections, model),
-			A3(
-				$elm$core$List$foldl,
-				$elm$core$Basics$append,
-				_List_Nil,
-				A2(
-					$elm$core$List$map,
-					$author$project$Elements$getCode(model),
-					inputNodes)));
-	});
-var $elm_community$list_extra$List$Extra$uniqueHelp = F4(
-	function (f, existing, remaining, accumulator) {
-		uniqueHelp:
-		while (true) {
-			if (!remaining.b) {
-				return $elm$core$List$reverse(accumulator);
-			} else {
-				var first = remaining.a;
-				var rest = remaining.b;
-				var computedFirst = f(first);
-				if (A2($elm$core$Set$member, computedFirst, existing)) {
-					var $temp$f = f,
-						$temp$existing = existing,
-						$temp$remaining = rest,
-						$temp$accumulator = accumulator;
-					f = $temp$f;
-					existing = $temp$existing;
-					remaining = $temp$remaining;
-					accumulator = $temp$accumulator;
-					continue uniqueHelp;
-				} else {
-					var $temp$f = f,
-						$temp$existing = A2($elm$core$Set$insert, computedFirst, existing),
-						$temp$remaining = rest,
-						$temp$accumulator = A2($elm$core$List$cons, first, accumulator);
-					f = $temp$f;
-					existing = $temp$existing;
-					remaining = $temp$remaining;
-					accumulator = $temp$accumulator;
-					continue uniqueHelp;
-				}
-			}
-		}
-	});
-var $elm_community$list_extra$List$Extra$unique = function (list) {
-	return A4($elm_community$list_extra$List$Extra$uniqueHelp, $elm$core$Basics$identity, $elm$core$Set$empty, list, _List_Nil);
-};
-var $author$project$Elements$fragmentShader = function (model) {
-	var maybeColorNode = $elm$core$List$head(
-		A2(
-			$elm$core$List$filter,
-			function (n) {
-				return A2($elm$core$String$startsWith, '!color', n.code);
-			},
-			model.nodes));
-	if (maybeColorNode.$ === 'Just') {
-		var colorNode = maybeColorNode.a;
-		var declarations = A2($author$project$Elements$getCode, model, colorNode);
-		var code = A3(
-			$elm$core$List$foldl,
-			$elm$core$Basics$append,
-			'',
-			$elm_community$list_extra$List$Extra$unique(declarations));
-		return _Utils_ap(
-			$author$project$Elements$fragmentShaderPrepend,
-			_Utils_ap(code, $author$project$Elements$fragmentShaderAppend));
-	} else {
-		return '';
-	}
-};
 var $author$project$Elements$shaderEl = function (model) {
 	return $mdgriffith$elm_ui$Element$html(
 		A2(
@@ -14911,11 +14919,7 @@ var $author$project$Elements$shaderEl = function (model) {
 				[
 					A2($elm$html$Html$Attributes$style, 'background', 'black'),
 					A2($elm$html$Html$Attributes$style, 'height', '100%'),
-					A2($elm$html$Html$Attributes$attribute, 'class', 'glslCanvas'),
-					A2(
-					$elm$html$Html$Attributes$attribute,
-					'data-fragment',
-					$author$project$Elements$fragmentShader(model))
+					A2($elm$html$Html$Attributes$attribute, 'id', 'shaderCanvas')
 				]),
 			_List_Nil));
 };

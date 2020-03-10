@@ -7,7 +7,7 @@ import Json.Decode.Pipeline exposing (required)
 import Json.Encode as Encode
 import List exposing (any, filter)
 import Node exposing (Node)
-import Ports exposing (storeModel)
+import Ports exposing (setGlsl, storeModel)
 import Socket exposing (Socket(..), getId)
 import Vec2 exposing (Vec2)
 
