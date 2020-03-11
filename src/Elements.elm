@@ -75,10 +75,9 @@ shaderEl model =
     Element.html
         (Html.canvas
             [ Html.Attributes.style "background" "black"
-            , Html.Attributes.style "height" "100%"
             , Html.Attributes.attribute "id" "shaderCanvas"
-
-            -- , Html.Attributes.attribute "data-fragment" (Shader.fragmentShader model)
+            , Html.Attributes.attribute "width" (String.fromFloat model.windowSize.x)
+            , Html.Attributes.attribute "height" (String.fromFloat model.windowSize.y)
             ]
             []
         )

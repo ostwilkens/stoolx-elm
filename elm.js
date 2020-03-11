@@ -6225,8 +6225,8 @@ var $author$project$Node$setCode = F2(
 			node,
 			{code: code}) : node;
 	});
-var $author$project$Shader$fragmentShaderAppend = '\r\ngl_FragColor = vec4(color, 1.0);\r\n}\r\n';
-var $author$project$Shader$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\n\r\n// thx to hg (http://mercury.sexy/hg_sdf)\r\nvec2 pR(vec2 p, float a) {\r\n\treturn cos(a)*p + sin(a)*vec2(p.y, -p.x);\r\n}\r\n\r\nvec3 rotXY(vec3 p, float a) {\r\n    vec2 xy = pR(p.xy, a);\r\n    return vec3(xy, p.z);\r\n}\r\n\r\nvec3 rotYZ(vec3 p, float a) {\r\n    vec2 yz = pR(p.yz, a);\r\n    return vec3(p.x, yz);\r\n}\r\n\r\nvec3 rotZX(vec3 p, float a) {\r\n    vec2 zx = pR(p.zx, a);\r\n    return vec3(zx.x, p.y, zx.y);\r\n}\r\n\r\nvoid main(){\r\n//u_time\r\nvec2 st = gl_FragCoord.xy/u_resolution.xy;\r\nvec3 color = vec3(0.0);\r\n';
+var $author$project$Shader$fragmentShaderAppend = '\r\n    return field;\r\n}\r\n\r\nvoid main()\r\n{\r\n//u_time\r\nvec3 cameraOrigin = vec3(0., -0.4, 10.0);\r\nvec3 cameraTarget = cameraOrigin + vec3(.0, -1., -10);\r\nvec3 upDirection = vec3(0., 1.0, 0.);\r\nvec3 cameraDir = normalize(cameraTarget - cameraOrigin);\r\nvec3 cameraRight = normalize(cross(upDirection, cameraOrigin));\r\nvec3 cameraUp = cross(cameraDir, cameraRight);\r\n\r\nvec2 uv = -1.0 + 2.0 * gl_FragCoord.xy / u_resolution.xy;\r\nuv.x *= u_resolution.x / u_resolution.y;\r\n\r\nvec3 rayDir = normalize(cameraRight * uv.x + cameraUp * uv.y + cameraDir);\r\n\r\nconst float MAX_DIST = 100.0;\r\nconst float EPSILON = 0.1;\r\n\r\nfloat totalDist = 0.0;\r\nvec3 p = cameraOrigin;\r\nfloat dist = EPSILON;\r\n\r\nfor(int i = 0; i < 10; i++)\r\n{\r\n    if (dist < EPSILON || totalDist > MAX_DIST)\r\n        break;\r\n\r\n    dist = scene(p);\r\n    totalDist += dist;\r\n    p += dist * rayDir;\r\n}\r\n\r\nvec2 eps = vec2(0.0, EPSILON);\r\nvec3 normal = normalize(vec3(\r\n    scene(p + eps.yxx) - scene(p - eps.yxx),\r\n    scene(p + eps.xyx) - scene(p - eps.xyx),\r\n    scene(p + eps.xxy) - scene(p - eps.xxy)));\r\n\r\nfloat diffuse = max(.0, dot(-rayDir, normal));\r\nfloat specular = pow(diffuse, 10.0);\r\n\r\nvec3 c = vec3(0.);\r\nc += smoothstep(0., 1.2, diffuse + 0.05) * 0.85;\r\nc += smoothstep(0., 1., specular) * 0.1;\r\nc = sqrt(c - 0.1) * 1.05;\r\n\r\ngl_FragColor = vec4(c, 1.0);\r\n}\r\n';
+var $author$project$Shader$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\n// thx to hg (http://mercury.sexy/hg_sdf)\r\nvec2 pR(vec2 p, float a) {\r\n\treturn cos(a)*p + sin(a)*vec2(p.y, -p.x);\r\n}\r\nvec3 rotXY(vec3 p, float a) {\r\n    vec2 xy = pR(p.xy, a);\r\n    return vec3(xy, p.z);\r\n}\r\nvec3 rotYZ(vec3 p, float a) {\r\n    vec2 yz = pR(p.yz, a);\r\n    return vec3(p.x, yz);\r\n}\r\nvec3 rotZX(vec3 p, float a) {\r\n    vec2 zx = pR(p.zx, a);\r\n    return vec3(zx.x, p.y, zx.y);\r\n}\r\n\r\nfloat scene(vec3 p)\r\n{\r\n    // vec3 field = max(min(pos, vec3(0.1)), vec3(-0.1));\r\n';
 var $author$project$Socket$getIndex = function (socket) {
 	if (socket.$ === 'Input') {
 		var index = socket.b;
@@ -6501,7 +6501,7 @@ var $author$project$Shader$fragmentShader = function (model) {
 		A2(
 			$elm$core$List$filter,
 			function (n) {
-				return A2($elm$core$String$startsWith, '!color', n.code);
+				return A2($elm$core$String$startsWith, '!', n.code);
 			},
 			model.nodes));
 	if (maybeColorNode.$ === 'Just') {
@@ -14942,8 +14942,15 @@ var $author$project$Elements$shaderEl = function (model) {
 			_List_fromArray(
 				[
 					A2($elm$html$Html$Attributes$style, 'background', 'black'),
-					A2($elm$html$Html$Attributes$style, 'height', '100%'),
-					A2($elm$html$Html$Attributes$attribute, 'id', 'shaderCanvas')
+					A2($elm$html$Html$Attributes$attribute, 'id', 'shaderCanvas'),
+					A2(
+					$elm$html$Html$Attributes$attribute,
+					'width',
+					$elm$core$String$fromFloat(model.windowSize.x)),
+					A2(
+					$elm$html$Html$Attributes$attribute,
+					'height',
+					$elm$core$String$fromFloat(model.windowSize.y))
 				]),
 			_List_Nil));
 };

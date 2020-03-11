@@ -113,7 +113,7 @@ fragmentShader : Model -> String
 fragmentShader model =
     let
         maybeColorNode =
-            head (filter (\n -> startsWith "!color" n.code) model.nodes)
+            head (filter (\n -> startsWith "!" n.code) model.nodes)
     in
     case maybeColorNode of
         Just colorNode ->
@@ -142,53 +142,87 @@ fragmentShader model =
             ""
 
 
-
--- float _4 = float(u_time);
--- float _3 = float(sin(_7.x));
--- vec3 _8 = vec3(rotXY(vec3(_3, _4, _7.x), _3));
--- vec2 _7 = vec2(gl_FragCoord.xy) / 100.0;
--- vec2 _5 = vec2(u_resolution) / 1000.0;
--- float _6 = float(length(vec2(_5.y, _5.x)));
--- color = vec3(_8.x, _7.y, _6);;
-
-
 fragmentShaderPrepend : String
 fragmentShaderPrepend =
     """
 precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
-
 // thx to hg (http://mercury.sexy/hg_sdf)
 vec2 pR(vec2 p, float a) {
 \treturn cos(a)*p + sin(a)*vec2(p.y, -p.x);
 }
-
 vec3 rotXY(vec3 p, float a) {
     vec2 xy = pR(p.xy, a);
     return vec3(xy, p.z);
 }
-
 vec3 rotYZ(vec3 p, float a) {
     vec2 yz = pR(p.yz, a);
     return vec3(p.x, yz);
 }
-
 vec3 rotZX(vec3 p, float a) {
     vec2 zx = pR(p.zx, a);
     return vec3(zx.x, p.y, zx.y);
 }
 
-void main(){
-//u_time
-vec2 st = gl_FragCoord.xy/u_resolution.xy;
-vec3 color = vec3(0.0);
+float scene(vec3 p)
+{
+    // vec3 field = max(min(pos, vec3(0.1)), vec3(-0.1));
 """
 
 
 fragmentShaderAppend : String
 fragmentShaderAppend =
     """
-gl_FragColor = vec4(color, 1.0);
+    return field;
+}
+
+void main()
+{
+//u_time
+vec3 cameraOrigin = vec3(0., -0.4, 10.0);
+vec3 cameraTarget = cameraOrigin + vec3(.0, -1., -10);
+vec3 upDirection = vec3(0., 1.0, 0.);
+vec3 cameraDir = normalize(cameraTarget - cameraOrigin);
+vec3 cameraRight = normalize(cross(upDirection, cameraOrigin));
+vec3 cameraUp = cross(cameraDir, cameraRight);
+
+vec2 uv = -1.0 + 2.0 * gl_FragCoord.xy / u_resolution.xy;
+uv.x *= u_resolution.x / u_resolution.y;
+
+vec3 rayDir = normalize(cameraRight * uv.x + cameraUp * uv.y + cameraDir);
+
+const float MAX_DIST = 100.0;
+const float EPSILON = 0.1;
+
+float totalDist = 0.0;
+vec3 p = cameraOrigin;
+float dist = EPSILON;
+
+for(int i = 0; i < 10; i++)
+{
+    if (dist < EPSILON || totalDist > MAX_DIST)
+        break;
+
+    dist = scene(p);
+    totalDist += dist;
+    p += dist * rayDir;
+}
+
+vec2 eps = vec2(0.0, EPSILON);
+vec3 normal = normalize(vec3(
+    scene(p + eps.yxx) - scene(p - eps.yxx),
+    scene(p + eps.xyx) - scene(p - eps.xyx),
+    scene(p + eps.xxy) - scene(p - eps.xxy)));
+
+float diffuse = max(.0, dot(-rayDir, normal));
+float specular = pow(diffuse, 10.0);
+
+vec3 c = vec3(0.);
+c += smoothstep(0., 1.2, diffuse + 0.05) * 0.85;
+c += smoothstep(0., 1., specular) * 0.1;
+c = sqrt(c - 0.1) * 1.05;
+
+gl_FragColor = vec4(c, 1.0);
 }
 """
