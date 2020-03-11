@@ -263,6 +263,7 @@ addButton =
     Input.button
         [ Background.color red
         , paddingXY 10 6
+        , Border.width 1
         ]
         { label = text "add"
         , onPress = Just Add
@@ -274,6 +275,7 @@ removeButton =
     Input.button
         [ Background.color red
         , paddingXY 10 6
+        , Border.width 1
         ]
         { label = text "remove"
         , onPress = Just Remove
@@ -285,6 +287,7 @@ saveButton =
     Input.button
         [ Background.color red
         , paddingXY 10 6
+        , Border.width 1
         ]
         { label = text "save"
         , onPress = Just Save

@@ -1,16 +1,16 @@
 module Shader exposing (fragmentShader)
 
-import Model exposing (Model)
-import List exposing (head, filter, map, member)
-import String exposing (startsWith)
-import List.Extra
-import Socket exposing (Socket)
-import Node exposing (Node)
 import Connection exposing (Connection)
+import List exposing (filter, head, map, member)
+import List.Extra
+import Model exposing (Model)
+import Node exposing (Node)
+import Socket exposing (Socket)
+import String exposing (startsWith)
 
 
-getCode : Model -> Node -> List String
-getCode model node =
+getCode : Model -> Int -> Node -> List ( String, Int )
+getCode model depth node =
     let
         connections =
             filter (\c -> Socket.getId c.input == node.id) model.connections
@@ -21,8 +21,8 @@ getCode model node =
         inputNodes =
             filter (\n -> member n.id outputIds) model.nodes
     in
-    getDeclarationString node connections model
-        :: List.foldl (++) [] (map (getCode model) inputNodes)
+    ( getDeclarationString node connections model, depth )
+        :: List.foldl (++) [] (map (getCode model (depth + 1)) inputNodes)
 
 
 getReplacementString : List Connection -> Model -> Int -> String
@@ -119,15 +119,37 @@ fragmentShader model =
         Just colorNode ->
             let
                 declarations =
-                    getCode model colorNode
+                    getCode model 0 colorNode
+
+                sortedDeclarations =
+                    List.sortWith (\( _, ad ) ( _, bd ) -> compare bd ad) declarations
+
+                declarations2 =
+                    map (\( a, _ ) -> a) sortedDeclarations
+
+                declarations3 =
+                    List.Extra.unique declarations2
+
+                declarations4 =
+                    List.reverse declarations3
 
                 code =
-                    List.foldl (++) "" (List.Extra.unique declarations)
+                    List.foldl (++) "" (List.Extra.unique declarations4)
             in
             fragmentShaderPrepend ++ code ++ fragmentShaderAppend
 
         Nothing ->
             ""
+
+
+
+-- float _4 = float(u_time);
+-- float _3 = float(sin(_7.x));
+-- vec3 _8 = vec3(rotXY(vec3(_3, _4, _7.x), _3));
+-- vec2 _7 = vec2(gl_FragCoord.xy) / 100.0;
+-- vec2 _5 = vec2(u_resolution) / 1000.0;
+-- float _6 = float(length(vec2(_5.y, _5.x)));
+-- color = vec3(_8.x, _7.y, _6);;
 
 
 fragmentShaderPrepend : String
@@ -136,6 +158,27 @@ fragmentShaderPrepend =
 precision mediump float;
 uniform vec2 u_resolution;
 uniform float u_time;
+
+// thx to hg (http://mercury.sexy/hg_sdf)
+vec2 pR(vec2 p, float a) {
+\treturn cos(a)*p + sin(a)*vec2(p.y, -p.x);
+}
+
+vec3 rotXY(vec3 p, float a) {
+    vec2 xy = pR(p.xy, a);
+    return vec3(xy, p.z);
+}
+
+vec3 rotYZ(vec3 p, float a) {
+    vec2 yz = pR(p.yz, a);
+    return vec3(p.x, yz);
+}
+
+vec3 rotZX(vec3 p, float a) {
+    vec2 zx = pR(p.zx, a);
+    return vec3(zx.x, p.y, zx.y);
+}
+
 void main(){
 //u_time
 vec2 st = gl_FragCoord.xy/u_resolution.xy;

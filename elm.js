@@ -6226,7 +6226,7 @@ var $author$project$Node$setCode = F2(
 			{code: code}) : node;
 	});
 var $author$project$Shader$fragmentShaderAppend = '\r\ngl_FragColor = vec4(color, 1.0);\r\n}\r\n';
-var $author$project$Shader$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\nvoid main(){\r\n//u_time\r\nvec2 st = gl_FragCoord.xy/u_resolution.xy;\r\nvec3 color = vec3(0.0);\r\n';
+var $author$project$Shader$fragmentShaderPrepend = '\r\nprecision mediump float;\r\nuniform vec2 u_resolution;\r\nuniform float u_time;\r\n\r\n// thx to hg (http://mercury.sexy/hg_sdf)\r\nvec2 pR(vec2 p, float a) {\r\n\treturn cos(a)*p + sin(a)*vec2(p.y, -p.x);\r\n}\r\n\r\nvec3 rotXY(vec3 p, float a) {\r\n    vec2 xy = pR(p.xy, a);\r\n    return vec3(xy, p.z);\r\n}\r\n\r\nvec3 rotYZ(vec3 p, float a) {\r\n    vec2 yz = pR(p.yz, a);\r\n    return vec3(p.x, yz);\r\n}\r\n\r\nvec3 rotZX(vec3 p, float a) {\r\n    vec2 zx = pR(p.zx, a);\r\n    return vec3(zx.x, p.y, zx.y);\r\n}\r\n\r\nvoid main(){\r\n//u_time\r\nvec2 st = gl_FragCoord.xy/u_resolution.xy;\r\nvec3 color = vec3(0.0);\r\n';
 var $author$project$Socket$getIndex = function (socket) {
 	if (socket.$ === 'Input') {
 		var index = socket.b;
@@ -6367,8 +6367,8 @@ var $elm$core$List$member = F2(
 			},
 			xs);
 	});
-var $author$project$Shader$getCode = F2(
-	function (model, node) {
+var $author$project$Shader$getCode = F3(
+	function (model, depth, node) {
 		var connections = A2(
 			$elm$core$List$filter,
 			function (c) {
@@ -6391,16 +6391,19 @@ var $author$project$Shader$getCode = F2(
 			model.nodes);
 		return A2(
 			$elm$core$List$cons,
-			A3($author$project$Shader$getDeclarationString, node, connections, model),
+			_Utils_Tuple2(
+				A3($author$project$Shader$getDeclarationString, node, connections, model),
+				depth),
 			A3(
 				$elm$core$List$foldl,
 				$elm$core$Basics$append,
 				_List_Nil,
 				A2(
 					$elm$core$List$map,
-					$author$project$Shader$getCode(model),
+					A2($author$project$Shader$getCode, model, depth + 1),
 					inputNodes)));
 	});
+var $elm$core$List$sortWith = _List_sortWith;
 var $elm$core$Set$Set_elm_builtin = function (a) {
 	return {$: 'Set_elm_builtin', a: a};
 };
@@ -6503,12 +6506,30 @@ var $author$project$Shader$fragmentShader = function (model) {
 			model.nodes));
 	if (maybeColorNode.$ === 'Just') {
 		var colorNode = maybeColorNode.a;
-		var declarations = A2($author$project$Shader$getCode, model, colorNode);
+		var declarations = A3($author$project$Shader$getCode, model, 0, colorNode);
+		var sortedDeclarations = A2(
+			$elm$core$List$sortWith,
+			F2(
+				function (_v2, _v3) {
+					var ad = _v2.b;
+					var bd = _v3.b;
+					return A2($elm$core$Basics$compare, bd, ad);
+				}),
+			declarations);
+		var declarations2 = A2(
+			$elm$core$List$map,
+			function (_v1) {
+				var a = _v1.a;
+				return a;
+			},
+			sortedDeclarations);
+		var declarations3 = $elm_community$list_extra$List$Extra$unique(declarations2);
+		var declarations4 = $elm$core$List$reverse(declarations3);
 		var code = A3(
 			$elm$core$List$foldl,
 			$elm$core$Basics$append,
 			'',
-			$elm_community$list_extra$List$Extra$unique(declarations));
+			$elm_community$list_extra$List$Extra$unique(declarations4));
 		return _Utils_ap(
 			$author$project$Shader$fragmentShaderPrepend,
 			_Utils_ap(code, $author$project$Shader$fragmentShaderAppend));
@@ -14502,7 +14523,8 @@ var $author$project$Elements$addButton = A2(
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$Background$color($author$project$Elements$red),
-			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
+			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6),
+			$mdgriffith$elm_ui$Element$Border$width(1)
 		]),
 	{
 		label: $mdgriffith$elm_ui$Element$text('add'),
@@ -14527,7 +14549,8 @@ var $author$project$Elements$removeButton = A2(
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$Background$color($author$project$Elements$red),
-			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
+			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6),
+			$mdgriffith$elm_ui$Element$Border$width(1)
 		]),
 	{
 		label: $mdgriffith$elm_ui$Element$text('remove'),
@@ -14557,7 +14580,8 @@ var $author$project$Elements$saveButton = A2(
 	_List_fromArray(
 		[
 			$mdgriffith$elm_ui$Element$Background$color($author$project$Elements$red),
-			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6)
+			A2($mdgriffith$elm_ui$Element$paddingXY, 10, 6),
+			$mdgriffith$elm_ui$Element$Border$width(1)
 		]),
 	{
 		label: $mdgriffith$elm_ui$Element$text('save'),
